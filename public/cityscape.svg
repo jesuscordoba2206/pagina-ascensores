@@ -1,0 +1,34 @@
+<svg width="1200" height="600" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#020617" />
+      <stop offset="100%" stop-color="#090b10" />
+    </linearGradient>
+    <linearGradient id="building" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#121924" />
+      <stop offset="100%" stop-color="#0b1017" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="600" fill="url(#sky)" />
+  <rect x="50" y="280" width="120" height="260" rx="24" fill="url(#building)" />
+  <rect x="190" y="220" width="100" height="320" rx="20" fill="url(#building)" />
+  <rect x="320" y="240" width="84" height="300" rx="18" fill="url(#building)" />
+  <rect x="420" y="180" width="140" height="360" rx="24" fill="url(#building)" />
+  <rect x="580" y="260" width="96" height="280" rx="20" fill="url(#building)" />
+  <rect x="700" y="240" width="110" height="300" rx="22" fill="url(#building)" />
+  <rect x="828" y="200" width="130" height="340" rx="26" fill="url(#building)" />
+  <rect x="980" y="260" width="90" height="280" rx="18" fill="url(#building)" />
+  <g fill="#0d2132" opacity="0.95">
+    <rect x="64" y="320" width="24" height="32" rx="6" />
+    <rect x="96" y="360" width="24" height="48" rx="6" />
+    <rect x="220" y="280" width="18" height="40" rx="6" />
+    <rect x="245" y="340" width="18" height="56" rx="6" />
+    <rect x="576" y="300" width="20" height="44" rx="6" />
+    <rect x="712" y="300" width="20" height="52" rx="6" />
+    <rect x="840" y="260" width="20" height="60" rx="6" />
+    <rect x="860" y="340" width="20" height="48" rx="6" />
+    <rect x="986" y="300" width="16" height="40" rx="6" />
+  </g>
+  <circle cx="980" cy="120" r="9" fill="#00ffff" opacity="0.24" />
+  <circle cx="1040" cy="90" r="6" fill="#00ffff" opacity="0.18" />
+</svg>
