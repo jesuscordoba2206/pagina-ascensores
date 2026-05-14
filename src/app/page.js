@@ -16,7 +16,7 @@ export default function Home() {
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
         >
-          <source src="/video_fondo.mp4" type="video/mp4" />
+          <source src="/fondo_video.mp4" type="video/mp4" />
         </video>
 
         {/* OVERLAY */}
@@ -26,7 +26,7 @@ export default function Home() {
         <div className="relative h-full max-w-6xl mx-auto px-6 md:px-12 flex flex-col justify-center">
           <div className="max-w-2xl">
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
-              J_web: Ingeniería en Transporte Vertical
+              Elevators: Ingeniería en Transporte Vertical
             </h1>
 
             <p className="text-gray-300 text-lg md:text-xl mb-8 leading-relaxed">
@@ -44,91 +44,52 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SERVICIOS */}
+
+
       <section className="py-32 px-6 bg-black">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-16 text-center">
-            Nuestros Servicios
-          </h2>
 
-          <div className="grid md:grid-cols-2 gap-16">
-            {/* Ascensores */}
-            <div className="pb-6 border-b border-gray-800">
-              <h3 className="text-2xl font-bold text-white mb-4">
-                Ascensores
-              </h3>
 
-              <p className="text-gray-400 leading-relaxed">
-                Sistemas de elevación de última generación. Instalación,
-                mantenimiento y modernización de ascensores residenciales,
-                comerciales e industriales.
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            {/* ASCENSORES */}
+            <div className="md:col-span-6 bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-12 hover:scale-[1.01] transition-transform duration-500">
+              <p className="text-[10px] text-cyan-400 tracking-[0.2em] uppercase mb-2">SERVICIO ESPECIALIZADO</p>
+              <h3 className="text-4xl font-bold text-white mb-4">Ascensores</h3>
+              <p className="font-light text-gray-400 leading-relaxed mb-6">
+                Sistemas de elevación de última generación. Instalación, mantenimiento y modernización de ascensores residenciales, comerciales e industriales.
               </p>
-
-              <Link
-                href="/servicios"
-                className="inline-block mt-6 text-cyan-400 hover:text-white transition-all duration-300 font-medium uppercase text-sm tracking-wide"
-              >
-                Ver más →
-              </Link>
+              <Link href="/servicios" className="text-cyan-400 hover:text-white transition-all duration-300 font-bold uppercase text-sm tracking-wide">Ver más →</Link>
             </div>
 
-            {/* Escaleras */}
-            <div className="pb-6 border-b border-gray-800">
-              <h3 className="text-2xl font-bold text-white mb-4">
-                Escaleras Eléctricas
-              </h3>
-
-              <p className="text-gray-400 leading-relaxed">
-                Soluciones eficientes en escaleras y pasillos rodantes. Diseño
-                ergonómico, bajo consumo energético y máxima durabilidad.
+            {/* ESCALERAS */}
+            <div className="md:col-span-6 bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-12 hover:scale-[1.01] transition-transform duration-500">
+              <p className="text-[10px] text-cyan-400 tracking-[0.2em] uppercase mb-2">SERVICIO ESPECIALIZADO</p>
+              <h3 className="text-4xl font-bold text-white mb-4">Escaleras Eléctricas</h3>
+              <p className="font-light text-gray-400 leading-relaxed mb-6">
+                Soluciones eficientes en escaleras y pasillos rodantes. Diseño ergonómico, bajo consumo energético y máxima durabilidad.
               </p>
-
-              <Link
-                href="/servicios"
-                className="inline-block mt-6 text-cyan-400 hover:text-white transition-all duration-300 font-medium uppercase text-sm tracking-wide"
-              >
-                Ver más →
-              </Link>
+              <Link href="/servicios" className="text-cyan-400 hover:text-white transition-all duration-300 font-bold uppercase text-sm tracking-wide">Ver más →</Link>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* CORPORATIVO */}
-      <section className="py-32 px-6 bg-zinc-950">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-16">
-            Sobre J_web
-          </h2>
-
-          <div className="space-y-12">
-            {/* Misión */}
-            <div>
-              <h3 className="text-xl font-bold text-cyan-400 mb-4 uppercase tracking-wide">
-                Misión
-              </h3>
-
-              <p className="text-gray-400 text-lg leading-relaxed">
-                Proporcionar soluciones integrales en transporte vertical que
-                combinen innovación tecnológica, seguridad y sostenibilidad.
+            {/* MISIÓN */}
+            <div className="md:col-span-8 bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-10 hover:scale-[1.01] transition-transform duration-500">
+              <h3 className="text-xl font-semibold text-zinc-300 mb-4 uppercase tracking-wide">MISIÓN</h3>
+              <p className="text-base font-light text-gray-400 leading-relaxed">
+                Brindar soluciones confiables en transporte vertical, ofreciendo ascensores seguros, cómodos y eficientes, adaptados a cada espacio y necesidad. Nuestro compromiso es garantizar la satisfacción del cliente mediante un servicio responsable y un soporte técnico oportuno.
               </p>
             </div>
 
-            {/* Visión */}
-            <div>
-              <h3 className="text-xl font-bold text-cyan-400 mb-4 uppercase tracking-wide">
-                Visión
-              </h3>
-
-              <p className="text-gray-400 text-lg leading-relaxed">
-                Ser líderes en soluciones de transporte vertical en Colombia,
-                reconocidos por nuestra excelencia técnica e innovación.
+            {/* VISIÓN */}
+            <div className="md:col-span-4 bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-10 hover:scale-[1.01] transition-transform duration-500">
+              <h3 className="text-xl font-semibold text-zinc-300 mb-4 uppercase tracking-wide">VISIÓN</h3>
+              <p className="text-base font-light text-gray-400 leading-relaxed">
+                Convertirnos en la empresa líder del transporte vertical en el mercado nacional, reconocidos como una organización sólida, rentable y modelo de otras organizaciones mediante nuestra búsqueda constante de la mejora continua.
               </p>
             </div>
           </div>
 
           {/* CTA */}
-          <div className="mt-16">
+          <div className="mt-16 text-center">
             <Link
               href="/login"
               className="inline-block bg-cyan-400 text-black px-8 py-3 rounded-md font-medium uppercase tracking-wide transition-all duration-300 hover:opacity-80"
