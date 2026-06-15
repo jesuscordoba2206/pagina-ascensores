@@ -7,7 +7,7 @@ export default function Home() {
       <Navbar />
 
       {/* HERO */}
-      <section className="h-screen relative overflow-hidden bg-black">
+      <section className="h-screen relative overflow-hidden bg-black -mt-24 md:-mt-28">
         {/* VIDEO */}
         <video
           autoPlay
@@ -26,13 +26,13 @@ export default function Home() {
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black to-transparent pointer-events-none" />
 
         {/* CONTENIDO */}
-        <div className="relative h-full max-w-6xl mx-auto px-6 md:px-12 flex flex-col justify-center">
+        <div className="relative h-full max-w-6xl mx-auto px-6 md:px-12 flex flex-col justify-center pt-28">
           <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-none md:leading-tight max-w-3xl">
               Elevators Ingeniería en Transporte Vertical
             </h1>
 
-            <p className="text-gray-300 text-lg md:text-xl mb-8 leading-relaxed">
+            <p className="text-base md:text-xl font-normal text-gray-400 mt-6 max-w-xl leading-relaxed mb-8">
               Expertos en soluciones verticales a nivel nacional.
               Innovación y confiabilidad para sus equipos.
             </p>
@@ -56,8 +56,8 @@ export default function Home() {
               {/* ASCENSORES */}
               <div className="md:col-span-6 bg-gradient-to-br from-cyan-500/15 via-zinc-900/40 to-black/80 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-12 hover:scale-[1.01] transition-transform duration-500">
                 <p className="text-[10px] text-cyan-400 tracking-[0.2em] uppercase mb-2">SERVICIO ESPECIALIZADO</p>
-                <h3 className="text-4xl font-bold text-white mb-4">Ascensores</h3>
-                <p className="font-light text-gray-400 leading-relaxed mb-6">
+                <h3 className="text-3xl md:text-4xl font-bold tracking-wide text-white mb-4">Ascensores</h3>
+                <p className="text-sm md:text-base font-normal text-gray-300 leading-relaxed mb-6">
                   Sistemas de elevación de última generación. Instalación, mantenimiento y modernización de ascensores residenciales, comerciales e industriales.
                 </p>
                 <Link href="/servicios" className="text-cyan-400 hover:text-white transition-all duration-300 font-bold uppercase text-sm tracking-wide">Ver más →</Link>
@@ -66,26 +66,33 @@ export default function Home() {
               {/* ESCALERAS */}
               <div className="md:col-span-6 bg-gradient-to-br from-cyan-500/15 via-zinc-900/40 to-black/80 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-12 hover:scale-[1.01] transition-transform duration-500">
                 <p className="text-[10px] text-cyan-400 tracking-[0.2em] uppercase mb-2">SERVICIO ESPECIALIZADO</p>
-                <h3 className="text-4xl font-bold text-white mb-4">Escaleras Eléctricas</h3>
-                <p className="font-light text-gray-400 leading-relaxed mb-6">
+                <h3 className="text-3xl md:text-4xl font-bold tracking-wide text-white mb-4">Escaleras Eléctricas</h3>
+                <p className="text-sm md:text-base font-normal text-gray-300 leading-relaxed mb-6">
                   Soluciones eficientes en escaleras y pasillos rodantes. Diseño ergonómico, bajo consumo energético y máxima durabilidad.
                 </p>
                 <Link href="/servicios" className="text-cyan-400 hover:text-white transition-all duration-300 font-bold uppercase text-sm tracking-wide">Ver más →</Link>
               </div>
 
-              {/* MISIÓN */}
+              {/* ASESORIA */}
               <div className="md:col-span-8 bg-gradient-to-br from-cyan-500/15 via-zinc-900/40 to-black/80 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-10 hover:scale-[1.01] transition-transform duration-500">
-                <h3 className="text-xl font-semibold text-zinc-300 mb-4 uppercase tracking-wide">MISIÓN</h3>
-                <p className="text-base font-light text-gray-400 leading-relaxed">
-                  Brindar soluciones confiables en transporte vertical, ofreciendo ascensores seguros, cómodos y eficientes, adaptados a cada espacio y necesidad. Nuestro compromiso es garantizar la satisfacción del cliente mediante un servicio responsable y un soporte técnico oportuno.
+                <h3 className="text-xl md:text-2xl font-bold tracking-wide text-cyan-400 uppercase mb-4 border-b border-cyan-400/20 pb-2">
+                  ASESORIA
+                </h3>
+                <p className="text-sm md:text-base font-normal text-gray-300 leading-relaxed">
+                  Tecnología, seguridad y confianza en cada elevación.
+                  Brindamos soluciones integrales en ascensores y sistemas de transporte vertical: diseño, fabricación, instalación, modernización, mantenimiento, reparación, inspección y certificación, cumpliendo con la Norma NTC 5926-1, 2, 3 y 4 y estándares acreditados por ONAC.
                 </p>
               </div>
 
-              {/* VISIÓN */}
+              {/* CONTACTOS */}
               <div className="md:col-span-4 bg-gradient-to-br from-cyan-500/15 via-zinc-900/40 to-black/80 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-10 hover:scale-[1.01] transition-transform duration-500">
-                <h3 className="text-xl font-semibold text-zinc-300 mb-4 uppercase tracking-wide">VISIÓN</h3>
-                <p className="text-base font-light text-gray-400 leading-relaxed">
-                  Convertirnos en la empresa líder del transporte vertical en el mercado nacional, reconocidos como una organización sólida, rentable y modelo de otras organizaciones mediante nuestra búsqueda constante de la mejora continua.
+                <h3 className="text-xl md:text-2xl font-bold tracking-wide text-cyan-400 uppercase mb-4 border-b border-cyan-400/20 pb-2">
+                  CONTACTOS
+                </h3>
+                <p className="text-sm md:text-base font-normal text-gray-300 leading-relaxed">
+                  TELEFONO: 3105751970
+                  TELEFONO: 3202051034
+                  correo: elevatorscompanyantioquia@gmail.com
                 </p>
               </div>
             </div>

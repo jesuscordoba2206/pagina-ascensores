@@ -13,7 +13,7 @@ export default function ServiciosPage() {
         <section className="pt-28 pb-20 px-6">
           <div className="max-w-6xl mx-auto">
             <div className="mb-16 text-center">
-              <p className="text-cyan-400 uppercase tracking-[0.35em] text-xs mb-4">Servicios</p>
+              <p className="text-cyan-400 uppercase tracking-[0.35em] text-xs mb-4"></p>
               <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tight">Soluciones diseñadas para el movimiento vertical.</h1>
               <p className="mx-auto mt-6 max-w-2xl text-zinc-400 font-light leading-relaxed">
                 Mantenimiento, instalación, reparación y respuesta inmediata para servicios de emergencia.

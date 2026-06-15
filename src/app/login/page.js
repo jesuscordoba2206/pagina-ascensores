@@ -1,23 +1,33 @@
+"use client";
+
 import Navbar from '@/components/Navbar';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  const handleLoginSubmit = (event) => {
+    event.preventDefault();
+    router.push('/dashboard');
+  };
+
   return (
-    <div className="bg-black text-white min-h-screen">
+    <div className="bg-zinc-950 text-white min-h-screen">
       <Navbar />
 
       <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-6 py-20">
-        <div className="w-full max-w-md bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-10">
+        <div className="w-full max-w-md bg-zinc-900/40 backdrop-blur-md border border-zinc-800 rounded-[2.5rem] p-10">
           <h1 className="text-4xl font-bold text-white mb-4">Acceder al Portal de Gestión</h1>
           <p className="text-zinc-400 font-light mb-8 leading-relaxed">
             Ingresa tus credenciales para revisar historiales, reportes y estados en tiempo real.
           </p>
 
-          <form className="space-y-6">
+          <form onSubmit={handleLoginSubmit} className="space-y-6">
             <label className="block text-sm uppercase tracking-[0.18em] text-zinc-400">
               ID de Cliente
               <input
                 type="text"
-                className="mt-3 w-full rounded-[2rem] border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+                className="mt-3 w-full rounded-[2rem] border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-white outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
                 placeholder="Ingresa tu ID"
               />
             </label>
@@ -26,7 +36,7 @@ export default function LoginPage() {
               Contraseña
               <input
                 type="password"
-                className="mt-3 w-full rounded-[2rem] border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+                className="mt-3 w-full rounded-[2rem] border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-white outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
                 placeholder="********"
               />
             </label>
