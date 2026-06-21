@@ -1,16 +1,35 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import mockElevatorData from '@/data/mockElevatorData';
+import { useState, useEffect } from 'react';
+import DashboardNavbar from '@/components/DashboardNavbar';
+
+function Field({ label, value, editable }) {
+  return (
+    <div>
+      <div className="text-xs text-zinc-400">{label}</div>
+      {editable ? (
+        <input
+          defaultValue={String(value ?? '')}
+          className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-400"
+        />
+      ) : (
+        <div className="mt-1 text-sm text-zinc-200">{String(value ?? '-')}</div>
+      )}
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const [currentRole, setCurrentRole] = useState('EMPRESA');
-  const [selectedUnit, setSelectedUnit] = useState('ASCENSOR 1');
+  const [selectedUnit, setSelectedUnit] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [equipments, setEquipments] = useState([]);
+  const [buildingInfo, setBuildingInfo] = useState({ buildingName: '', address: '' });
 
   const isClientRole = currentRole === 'CLIENTE';
   const isEnterpriseRole = currentRole === 'EMPRESA';
 
-  const unitList = ['ASCENSOR 1', 'ASCENSOR 2', 'ESCALERA 1'];
+  const unitList = equipments.map((e) => e.internalCode || e.id);
 
   const handleRoleToggle = (role) => {
     setCurrentRole(role);
@@ -18,46 +37,76 @@ export default function DashboardPage() {
 
   const handleUnitClick = (unit) => {
     setSelectedUnit(unit);
+    const found = equipments.find((e) => (e.internalCode || e.id) === unit);
+    if (found) setBuildingInfo({ buildingName: found.buildingName || '', address: found.address || '' });
   };
+
+  const selectedEquipment = equipments.find((e) => (e.internalCode || e.id) === selectedUnit) || {};
+
+  useEffect(() => {
+    // Fetch backend session to get the real role (expects an auth cookie `userEmail`)
+    fetch('/api/session')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.role) setCurrentRole(data.role);
+      })
+      .catch(() => {
+        // keep fallback role
+      });
+    // Fetch equipment list
+    fetch('/api/equipment')
+      .then((r) => r.json())
+      .then((list) => {
+        if (Array.isArray(list)) {
+          setEquipments(list);
+          if (list.length > 0) {
+            setSelectedUnit(list[0].internalCode || list[0].id);
+            setBuildingInfo({ buildingName: list[0].buildingName || '', address: list[0].address || '' });
+          }
+        }
+      })
+      .catch(() => {
+        // ignore
+      });
+  }, []);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <div className="border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
-                {mockElevatorData.general.buildingName}
-              </h1>
-              <p className="mt-3 text-lg md:text-2xl text-cyan-400 max-w-3xl">
-                {mockElevatorData.general.address}
-              </p>
-            </div>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <DashboardNavbar />
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
+              {buildingInfo.buildingName}
+            </h1>
+            <p className="mt-3 text-lg md:text-2xl text-cyan-400 max-w-3xl">
+              {buildingInfo.address}
+            </p>
+          </div>
 
-            <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/60 p-3">
-              <button
-                type="button"
-                onClick={() => handleRoleToggle('CLIENTE')}
-                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition duration-300 ${
-                  isClientRole
-                    ? 'border border-cyan-400 bg-cyan-500/15 text-cyan-300'
-                    : 'border border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-cyan-400 hover:text-white'
-                }`}
-              >
-                CLIENTE
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRoleToggle('EMPRESA')}
-                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition duration-300 ${
-                  isEnterpriseRole
-                    ? 'border border-cyan-400 bg-cyan-500/15 text-cyan-300'
-                    : 'border border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-cyan-400 hover:text-white'
-                }`}
-              >
-                EMPRESA
-              </button>
-            </div>
+          <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/60 p-3">
+            <button
+              type="button"
+              onClick={() => handleRoleToggle('CLIENTE')}
+              className={`rounded-2xl px-4 py-2 text-sm font-semibold transition duration-300 ${
+                isClientRole
+                  ? 'border border-cyan-400 bg-cyan-500/15 text-cyan-300'
+                  : 'border border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-cyan-400 hover:text-white'
+              }`}
+            >
+              CLIENTE
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRoleToggle('EMPRESA')}
+              className={`rounded-2xl px-4 py-2 text-sm font-semibold transition duration-300 ${
+                isEnterpriseRole
+                  ? 'border border-cyan-400 bg-cyan-500/15 text-cyan-300'
+                  : 'border border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-cyan-400 hover:text-white'
+              }`}
+            >
+              EMPRESA
+            </button>
           </div>
         </div>
       </div>
@@ -122,6 +171,92 @@ export default function DashboardPage() {
                   : 'Gestiona los datos del equipo y revisa sus especificaciones.'}
               </p>
             </div>
+          </section>
+
+          {/* Detailed ficha técnica panel - central column becomes a larger area on mobile */}
+          <section className="col-span-1 lg:col-span-3 mt-6 rounded-[2rem] border border-zinc-800 bg-zinc-900/40 p-6 shadow-xl shadow-cyan-500/10 backdrop-blur-md">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-semibold">Ficha Técnica Detallada — {selectedUnit}</h3>
+              {currentRole === 'EMPRESA' && (
+                <div className="flex gap-3">
+                  {!isEditing ? (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-cyan-300"
+                    >
+                      Editar ficha
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setIsEditing(false)}
+                        className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-emerald-300"
+                      >
+                        Guardar
+                      </button>
+                      <button
+                        onClick={() => {
+                          /* placeholder delete handler */
+                        }}
+                        className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-rose-300"
+                      >
+                        Eliminar
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Traction System */}
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-xs text-zinc-400">Sistema de Tracción</p>
+                <div className="mt-3 space-y-2">
+                  <Field label="Marca motor" value={selectedEquipment.motorBrand} editable={isEditing && currentRole === 'EMPRESA'} />
+                  <Field label="Potencia" value={selectedEquipment.motorPower} editable={isEditing && currentRole === 'EMPRESA'} />
+                  <Field label="Alimentación" value={selectedEquipment.voltage} editable={isEditing && currentRole === 'EMPRESA'} />
+                  <Field label="Tipo tracción" value={selectedEquipment.tractionType} editable={isEditing && currentRole === 'EMPRESA'} />
+                </div>
+              </div>
+
+              {/* Cables y performance */}
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-xs text-zinc-400">Cables y Performance</p>
+                <div className="mt-3 space-y-2">
+                  <Field label="Cables de tracción" value={selectedEquipment.cableQuantity} editable={isEditing && currentRole === 'EMPRESA'} />
+                  <Field label="Sección cable" value={selectedEquipment.cableGauge} editable={isEditing && currentRole === 'EMPRESA'} />
+                  <Field label="Paradas" value={selectedEquipment.stopsQuantity} editable={isEditing && currentRole === 'EMPRESA'} />
+                  <Field label="Velocidad nominal (m/s)" value={selectedEquipment.nominalSpeed} editable={isEditing && currentRole === 'EMPRESA'} />
+                </div>
+              </div>
+
+              {/* Cabina y seguridad */}
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-xs text-zinc-400">Cabina y Seguridad</p>
+                <div className="mt-3 space-y-2">
+                  <Field label="Peso máximo (kg)" value={selectedEquipment.maxWeight} editable={isEditing && currentRole === 'EMPRESA'} />
+                  <Field label="Capacidad" value={selectedEquipment.capacityPeople} editable={isEditing && currentRole === 'EMPRESA'} />
+                  <Field label="Control eléctrico" value={selectedEquipment.controlBrand} editable={isEditing && currentRole === 'EMPRESA'} />
+                  <Field label="Operador de puertas" value={selectedEquipment.doorOperator} editable={isEditing && currentRole === 'EMPRESA'} />
+                </div>
+              </div>
+            </div>
+
+            {/* Empresa-only global actions */}
+            {currentRole === 'EMPRESA' && (
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button className="rounded-3xl border border-cyan-400 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-white">
+                  Registrar Nuevo Equipo
+                </button>
+                <button className="rounded-3xl border border-emerald-400 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-200">
+                  Actualizar Información
+                </button>
+                <button className="rounded-3xl border border-rose-400 bg-rose-500/8 px-4 py-3 text-sm font-semibold text-rose-200">
+                  Eliminar Registro
+                </button>
+              </div>
+            )}
           </section>
 
           <section className="rounded-[2rem] border border-zinc-800 bg-zinc-900/40 p-6 shadow-xl shadow-cyan-500/10 backdrop-blur-md transition duration-300 hover:border-cyan-400/60">

@@ -2,13 +2,39 @@
 
 import Navbar from '@/components/Navbar';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   const handleLoginSubmit = (event) => {
     event.preventDefault();
-    router.push('/dashboard');
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const email = formData.get('email')?.toString();
+    const password = formData.get('password')?.toString();
+
+    setLoading(true);
+    fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setLoading(false);
+        if (data?.ok) {
+          router.push('/dashboard');
+        } else {
+          alert(data?.error || 'Login failed');
+        }
+      })
+      .catch(() => {
+        setLoading(false);
+        alert('Login failed');
+      });
   };
 
   return (
@@ -26,6 +52,7 @@ export default function LoginPage() {
             <label className="block text-sm uppercase tracking-[0.18em] text-zinc-400">
               ID de Cliente
               <input
+                name="email"
                 type="text"
                 className="mt-3 w-full rounded-[2rem] border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-white outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
                 placeholder="Ingresa tu ID"
@@ -35,6 +62,7 @@ export default function LoginPage() {
             <label className="block text-sm uppercase tracking-[0.18em] text-zinc-400">
               Contraseña
               <input
+                name="password"
                 type="password"
                 className="mt-3 w-full rounded-[2rem] border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-white outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
                 placeholder="********"
@@ -43,9 +71,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full rounded-[2.5rem] bg-cyan-400 text-black py-4 font-bold uppercase tracking-wide transition-all duration-300 hover:opacity-90"
+              disabled={loading}
+              className="w-full rounded-[2.5rem] bg-cyan-400 text-black py-4 font-bold uppercase tracking-wide transition-all duration-300 hover:opacity-90 disabled:opacity-60"
             >
-              Acceder al Portal de Gestión
+              {loading ? 'Conectando...' : 'Acceder al Portal de Gestión'}
             </button>
           </form>
 
