@@ -1,42 +1,19 @@
 import Navbar from '@/components/Navbar';
+import { prisma } from '@/lib/prisma';
 
-const proyectos = [
-  {
-    name: 'Edificio A',
-    description: 'Ascensor premium instalado en torre corporativa con monitoreo continuo y acabados de alto estándar.',
-    tags: ['Ascensor', 'Alta Velocidad', 'Mantenimiento'],
-    images: [
-      'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1475855581690-80accde3c6a4?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
-    ],
-  },
-  {
-    name: 'Edificio B',
-    description: 'Modernización de sistema vertical con control inteligente y experiencia de usuario de clase mundial.',
-    tags: ['Modernización', 'Control Inteligente', 'Seguridad'],
-    images: [
-      'https://images.unsplash.com/photo-1494524484466-3174838a9f75?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1460878938148-6dab93946f2d?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1494525421071-31b5b48271ef?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80',
-    ],
-  },
-  {
-    name: 'Escalera C',
-    description: 'Proyecto de movilidad peatonal con escaleras eléctricas eficientes para flujo continuo en centros comerciales.',
-    tags: ['Escalera', 'Flujo Peatonal', 'Eficiencia'],
-    images: [
-      'https://images.unsplash.com/photo-1494525421071-31b5b48271ef?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
-    ],
-  },
-];
+export const dynamic = 'force-dynamic';
 
-export default function EmpresaPage() {
+export default async function EmpresaPage() {
+  let proyectos = [];
+
+  try {
+    proyectos = await prisma.project.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  } catch (err) {
+    console.error('Error loading projects for empresa page:', err);
+  }
+
   return (
     <div className="relative min-h-screen bg-[url('/fondo_img.jpg')] bg-cover bg-center bg-fixed text-white">
       <div className="absolute inset-0 bg-black/70" />
@@ -72,36 +49,46 @@ export default function EmpresaPage() {
           </div>
         </section>
 
-        <section className="space-y-16 px-6 pb-20">
-          {proyectos.map((proyecto) => (
-            <article key={proyecto.name} className="rounded-[2rem] border border-zinc-800 bg-zinc-900/40 p-6 backdrop-blur-md shadow-xl shadow-cyan-500/10">
-              <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="max-w-3xl">
-                  <h2 className="text-xl md:text-3xl font-bold text-white">{proyecto.name}</h2>
-                  <p className="mt-3 text-zinc-400 leading-relaxed">{proyecto.description}</p>
-                  <div className="mt-4 flex flex-wrap gap-2 text-sm text-cyan-300">
-                    {proyecto.tags.map((tag) => (
-                      <span key={tag} className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+        <section className="px-6 pb-20">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-5 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-cyan-300 uppercase tracking-[0.28em] text-xs">Nuestros Proyectos</p>
+                <h2 className="mt-3 text-3xl md:text-4xl font-bold text-white">Instalaciones destacadas</h2>
               </div>
+              <p className="text-sm text-zinc-400">Desliza para explorar</p>
+            </div>
 
-              <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 scrollbar-hide pb-4">
-                {proyecto.images.map((image, index) => (
-                  <div key={index} className="w-[300px] md:w-[450px] h-[220px] md:h-[300px] shrink-0 snap-center overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/20 transition-all duration-300 hover:scale-[1.02] hover:brightness-110">
-                    <img
-                      src={image}
-                      alt={`${proyecto.name} imagen ${index + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
+            {proyectos.length === 0 ? (
+              <div className="rounded-3xl border border-white/20 bg-white/10 p-8 text-zinc-300 backdrop-blur-md">
+                Aún no hay proyectos publicados. Muy pronto verás aquí las imágenes reales de nuestras instalaciones.
+              </div>
+            ) : (
+              <div className="flex overflow-x-auto scrollbar-hide gap-6 py-4 pr-6">
+                {proyectos.map((proyecto) => (
+                  <article
+                    key={proyecto.id}
+                    className="group shrink-0 w-[300px] md:w-[360px] rounded-3xl border border-white/20 bg-white/10 backdrop-blur-md overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:bg-white/15 hover:shadow-[0_10px_45px_rgba(34,211,238,0.2)]"
+                  >
+                    <div className="h-44 md:h-56 w-full overflow-hidden">
+                      <img
+                        src={proyecto.imageUrl}
+                        alt={proyecto.title}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="p-5">
+                      <h3 className="text-xl font-semibold text-white">{proyecto.title}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-zinc-200/90">
+                        {proyecto.description || 'Proyecto ejecutado por nuestro equipo de transporte vertical con enfoque en seguridad y desempeño.'}
+                      </p>
+                    </div>
+                  </article>
                 ))}
               </div>
-            </article>
-          ))}
+            )}
+          </div>
         </section>
       </main>
     </div>

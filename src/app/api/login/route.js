@@ -1,16 +1,17 @@
-import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { findUserByEmail, normalizeEmail, normalizeRole } from '@/lib/auth';
 
 export async function POST(request) {
   try {
     const body = await request.json();
     const { email, password } = body || {};
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!email || !password) {
+    if (!normalizedEmail || typeof password !== 'string' || !password) {
       return new Response(JSON.stringify({ ok: false, error: 'Missing credentials' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await findUserByEmail(normalizedEmail);
     if (!user) {
       return new Response(JSON.stringify({ ok: false, error: 'Invalid credentials' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
     }
@@ -27,7 +28,7 @@ export async function POST(request) {
     headers.append('Set-Cookie', `userEmail=${cookieValue}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}`);
     headers.append('Content-Type', 'application/json');
 
-    return new Response(JSON.stringify({ ok: true, role: user.role }), { status: 200, headers });
+    return new Response(JSON.stringify({ ok: true, role: normalizeRole(user.role) }), { status: 200, headers });
   } catch (err) {
     return new Response(JSON.stringify({ ok: false, error: String(err) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }

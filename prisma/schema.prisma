@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,37 +11,113 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  email     String   @unique
-  password  String
-  role      String   @default("CLIENTE")
-  name      String?
-  building  String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  email      String   @unique
+  password   String
+  role       String   @default("CLIENTE")
+  name       String?
+  building   String?
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+  equipments Equipment[]
+
+  @@map("User")
 }
 
 model Equipment {
-  id               String   @id @default(auto()) @map("_id") @db.ObjectId
-  buildingName     String
-  address          String
-  type             String
-  internalCode     String   @unique
-  installationDate DateTime
-  lastMaintenance  DateTime
-  motorBrand       String?
-  motorPower       String?
-  voltage          String?
-  tractionType     String?
-  cableQuantity    Int?
-  cableGauge       String?
-  stopsQuantity    Int
-  nominalSpeed     Float?
-  maxWeight        Int?
-  capacityPeople   Int?
-  controlBrand     String?
-  doorOperator     String?
-  speedGovernor    String?
-  infraredCurtain  String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String          @db.ObjectId
+  internalCode String          @unique
+  type         String
+  motorBrand   String?
+  controlBrand String?
+  cableType    String?
+  cableGauge   String?
+  maxWeight    Int?
+  capacity     Int?
+  reportUrls   String[]        @default([])
+  fichaTecnica FichaTecnica?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@map("Equipment")
+}
+
+model FichaTecnica {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  equipment                 Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  equipmentId               String    @unique @db.ObjectId
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Información General
+  // ─────────────────────────────────────────────────────────────────────────────
+  codigoEquipo              String?
+  marcaOriginal             String?
+  modelo                    String?
+  anoInstalacion            Int?
+  paisOrigen                String?
+  numParadas                Int?
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Sistema de Fuerza / Motor
+  // ─────────────────────────────────────────────────────────────────────────────
+  tipoTraccion              String?   // "Con cuarto de máquinas", "MRL", etc.
+  marcaMotor                String?
+  potenciaKW                Float?
+  voltajeAlimentacion       String?   // "380/220V 3F", etc.
+  marcaControlElectrico     String?
+  tipoTecnologia            String?   // "VVVF", "Dos velocidades", etc.
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Cables y Suspensión
+  // ─────────────────────────────────────────────────────────────────────────────
+  numCablesTraccion         Int?
+  diametroCable             Float?    // en mm
+  longitudAproximada        Float?    // en metros
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Cabina y Capacidades
+  // ─────────────────────────────────────────────────────────────────────────────
+  capacidadKilos            Int?
+  capacidadPersonas         Int?
+  anchoCabina               Float?    // en mm
+  altoCabina                Float?    // en mm
+  profundidadCabina         Float?    // en mm
+  acabadoCabina             String?   // "Acero Inoxidable 304", etc.
+  tipoPiso                  String?
+  tipoBotoneraCOP           String?   // "LED RGB", "Braille", etc.
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Accesos y Puertas
+  // ─────────────────────────────────────────────────────────────────────────────
+  tipoAperturaPuerta        String?   // "Central", "Telescópica", etc.
+  anchoPasoPuerta           Int?      // en mm
+  marcaOperador             String?
+  sistemaSeguridadPuerta    String?   // "Cortina Infrarroja", etc.
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Componentes Críticos de Seguridad
+  // ─────────────────────────────────────────────────────────────────────────────
+  marcaLimitador            String?
+  velocidadDisparo          Float?    // en m/s
+  tipoParacaidas            String?
+  tipoAmortiguadores        String?
+  tipoPesacargas            String?
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Auditoría
+  // ─────────────────────────────────────────────────────────────────────────────
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  @@map("FichaTecnica")
+}
+
+model Project {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  imageUrl    String
+  createdAt   DateTime @default(now())
 }

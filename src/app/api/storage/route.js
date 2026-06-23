@@ -1,0 +1,31 @@
+import fs from 'fs';
+import path from 'path';
+import { requireEnterpriseRole } from '@/lib/auth';
+
+function sanitizeFileName(name) {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+export async function POST(request) {
+  const unauthorized = await requireEnterpriseRole(request);
+  if (unauthorized) return unauthorized;
+
+  const formData = await request.formData();
+  const file = formData.get('file');
+  const category = String(formData.get('category') || 'reports');
+
+  if (!file || !(file instanceof File)) {
+    return new Response(JSON.stringify({ error: 'Missing file upload' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  const filename = sanitizeFileName(file.name || `upload-${Date.now()}`);
+  const uploadsPath = path.join(process.cwd(), 'public', 'uploads', category);
+  await fs.promises.mkdir(uploadsPath, { recursive: true });
+  const filePath = path.join(uploadsPath, filename);
+
+  const arrayBuffer = await file.arrayBuffer();
+  await fs.promises.writeFile(filePath, Buffer.from(arrayBuffer));
+
+  const url = `/uploads/${category}/${encodeURIComponent(filename)}`;
+  return new Response(JSON.stringify({ url }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+}

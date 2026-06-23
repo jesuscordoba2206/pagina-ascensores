@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 
 function Field({ label, value, editable }) {
@@ -20,14 +21,18 @@ function Field({ label, value, editable }) {
 }
 
 export default function DashboardPage() {
-  const [currentRole, setCurrentRole] = useState('EMPRESA');
+  const router = useRouter();
+  const [sessionRole, setSessionRole] = useState('CLIENTE');
+  const [currentRole, setCurrentRole] = useState('CLIENTE');
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [equipments, setEquipments] = useState([]);
   const [buildingInfo, setBuildingInfo] = useState({ buildingName: '', address: '' });
+  const [loading, setLoading] = useState(true);
 
   const isClientRole = currentRole === 'CLIENTE';
   const isEnterpriseRole = currentRole === 'EMPRESA';
+  const isSessionEnterprise = sessionRole === 'EMPRESA';
 
   const unitList = equipments.map((e) => e.internalCode || e.id);
 
@@ -44,31 +49,40 @@ export default function DashboardPage() {
   const selectedEquipment = equipments.find((e) => (e.internalCode || e.id) === selectedUnit) || {};
 
   useEffect(() => {
-    // Fetch backend session to get the real role (expects an auth cookie `userEmail`)
     fetch('/api/session')
       .then((r) => r.json())
       .then((data) => {
-        if (data?.role) setCurrentRole(data.role);
-      })
-      .catch(() => {
-        // keep fallback role
-      });
-    // Fetch equipment list
-    fetch('/api/equipment')
-      .then((r) => r.json())
-      .then((list) => {
-        if (Array.isArray(list)) {
-          setEquipments(list);
-          if (list.length > 0) {
-            setSelectedUnit(list[0].internalCode || list[0].id);
-            setBuildingInfo({ buildingName: list[0].buildingName || '', address: list[0].address || '' });
-          }
+        const role = data?.role || 'CLIENTE';
+        setSessionRole(role);
+        setCurrentRole(role);
+        if (role === 'EMPRESA') {
+          router.replace('/dashboard/empresa');
+        } else {
+          router.replace('/dashboard/cliente');
         }
       })
       .catch(() => {
-        // ignore
-      });
-  }, []);
+        router.replace('/dashboard/cliente');
+      })
+      .finally(() => setLoading(false));
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-white">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+          <DashboardNavbar />
+          <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900/70 p-8 text-center shadow-xl shadow-black/20">
+            <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">Cargando</p>
+            <h1 className="mt-6 text-3xl font-semibold">Redirigiendo al dashboard adecuado...</h1>
+            <p className="mt-4 text-zinc-300">Detectando tu rol de sesión y cargando el panel correcto.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -84,30 +98,32 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/60 p-3">
-            <button
-              type="button"
-              onClick={() => handleRoleToggle('CLIENTE')}
-              className={`rounded-2xl px-4 py-2 text-sm font-semibold transition duration-300 ${
-                isClientRole
-                  ? 'border border-cyan-400 bg-cyan-500/15 text-cyan-300'
-                  : 'border border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-cyan-400 hover:text-white'
-              }`}
-            >
-              CLIENTE
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRoleToggle('EMPRESA')}
-              className={`rounded-2xl px-4 py-2 text-sm font-semibold transition duration-300 ${
-                isEnterpriseRole
-                  ? 'border border-cyan-400 bg-cyan-500/15 text-cyan-300'
-                  : 'border border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-cyan-400 hover:text-white'
-              }`}
-            >
-              EMPRESA
-            </button>
-          </div>
+          {isSessionEnterprise && (
+            <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/60 p-3">
+              <button
+                type="button"
+                onClick={() => handleRoleToggle('CLIENTE')}
+                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition duration-300 ${
+                  isClientRole
+                    ? 'border border-cyan-400 bg-cyan-500/15 text-cyan-300'
+                    : 'border border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-cyan-400 hover:text-white'
+                }`}
+              >
+                CLIENTE
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRoleToggle('EMPRESA')}
+                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition duration-300 ${
+                  isEnterpriseRole
+                    ? 'border border-cyan-400 bg-cyan-500/15 text-cyan-300'
+                    : 'border border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-cyan-400 hover:text-white'
+                }`}
+              >
+                EMPRESA
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -330,9 +346,9 @@ export default function DashboardPage() {
 
         <div className="mt-10 rounded-[2rem] border border-zinc-800 bg-zinc-900/40 p-6 text-sm text-zinc-300">
           <p className="font-semibold text-white">Rol actual:</p>
-          <p className="mt-2 text-cyan-300">{currentRole}</p>
+          <p className="mt-2 text-cyan-300">{sessionRole}</p>
           <p className="mt-3 text-zinc-400">
-            {isClientRole
+            {sessionRole === 'CLIENTE'
               ? 'Los clientes pueden visualizar y descargar reportes en modo solo lectura.'
               : 'Las empresas pueden gestionar datos, editar secciones y generar reportes.'}
           </p>
