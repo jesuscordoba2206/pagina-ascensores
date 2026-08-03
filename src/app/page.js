@@ -7,7 +7,7 @@ export default function Home() {
       <Navbar />
 
       {/* HERO */}
-      <section className="h-screen relative overflow-hidden bg-black -mt-24 md:-mt-28">
+      <section className="h-svh relative overflow-hidden bg-black -mt-24 md:-mt-28">
         {/* VIDEO */}
         <video
           autoPlay
@@ -47,7 +47,7 @@ export default function Home() {
         </div>
       </section>
 
-      <main className="relative min-h-screen bg-[url('/fondo_img.jpg')] bg-fixed bg-cover bg-center bg-no-repeat">
+      <main className="relative min-h-screen bg-[url('/fondo_img.jpg')] bg-cover bg-center bg-no-repeat md:bg-fixed">
         <div className="absolute inset-0 bg-black/75" />
 
         <div className="relative z-10 py-32 px-6">

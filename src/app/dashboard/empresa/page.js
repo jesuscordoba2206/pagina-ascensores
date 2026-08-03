@@ -955,7 +955,7 @@ export default function Page() {
 
       {showAddEquipmentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
-          <div className="w-full max-w-2xl rounded-[2rem] border border-zinc-800 bg-zinc-950/95 p-6">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2rem] border border-zinc-800 bg-zinc-950/95 p-6">
             <h3 className="text-2xl font-semibold mb-6">Agregar equipo</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <InputField
@@ -1011,7 +1011,7 @@ export default function Page() {
 
       {showReportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
-          <div className="w-full max-w-3xl rounded-[2rem] border border-zinc-800 bg-zinc-950/95 p-6">
+          <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-[2rem] border border-zinc-800 bg-zinc-950/95 p-6">
             <h3 className="text-2xl font-semibold mb-6">Subir reportes PDF por mes</h3>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1083,7 +1083,7 @@ export default function Page() {
 
       {showPortfolioModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
-          <div className="w-full max-w-md rounded-[2rem] border border-zinc-800 bg-zinc-950/95 p-6">
+          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[2rem] border border-zinc-800 bg-zinc-950/95 p-6">
             <h3 className="text-2xl font-semibold mb-6">{editingProject ? 'Editar proyecto' : 'Agregar proyecto'}</h3>
             <div className="space-y-4">
               <InputField

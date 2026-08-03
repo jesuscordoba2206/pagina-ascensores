@@ -57,7 +57,7 @@ export default function ServiciosPage() {
   const cards = activeCategory === 'ascensores' ? categories.ascensores : categories.escaleras;
 
   return (
-    <div className="relative min-h-screen bg-[url('/fondo_img.jpg')] bg-fixed bg-cover bg-center bg-no-repeat text-white">
+    <div className="relative min-h-screen bg-[url('/fondo_img.jpg')] bg-cover bg-center bg-no-repeat text-white md:bg-fixed">
       <div className="absolute inset-0 bg-black/75 z-0" />
 
       <div className="relative z-10">

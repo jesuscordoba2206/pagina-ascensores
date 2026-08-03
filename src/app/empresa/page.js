@@ -16,7 +16,7 @@ export default async function EmpresaPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[url('/fondo_img.jpg')] bg-cover bg-center bg-fixed text-white">
+    <div className="relative min-h-screen bg-[url('/fondo_img.jpg')] bg-cover bg-center text-white md:bg-fixed">
       <div className="absolute inset-0 bg-black/70" />
       <Navbar />
 
