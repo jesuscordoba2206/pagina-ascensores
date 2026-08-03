@@ -420,6 +420,22 @@ export default function Page() {
     }
   }
 
+  async function handleDeleteReport(equipmentId, monthKey) {
+    if (!window.confirm('¿Eliminar este reporte PDF?\nEsta acción no se puede deshacer.')) return;
+    try {
+      const res = await fetch(`/api/report?equipmentId=${equipmentId}&month=${monthKey}`, { method: 'DELETE' });
+      if (res.ok) {
+        await loadClients();
+        alert('✅ Reporte eliminado correctamente.');
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData?.error || `Error HTTP ${res.status}`);
+      }
+    } catch (err) {
+      alert('Error eliminando reporte: ' + err.message);
+    }
+  }
+
   async function handleDeleteProject(project) {
     if (!window.confirm('¿Eliminar permanentemente este proyecto?\nEsta acción no se puede deshacer.')) return;
     setSaving(true);
@@ -1034,6 +1050,22 @@ export default function Page() {
                         {hasExistingFile ? 'Cargado' : 'Vacío'}
                       </span>
                     </div>
+
+                    {hasExistingFile && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReport(selectedEquipmentForReport.id, month.key)}
+                          className="flex-1 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/25"
+                          title="Eliminar reporte"
+                        >
+                          🗑 Eliminar
+                        </button>
+                        <span className="flex-1 rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300">
+                          ✎ Reemplazar
+                        </span>
+                      </div>
+                    )}
 
                     <input
                       type="file"
