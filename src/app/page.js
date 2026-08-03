@@ -54,8 +54,7 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* ASCENSORES */}
-              <div className="md:col-span-6 bg-gradient-to-br from-cyan-500/15 via-zinc-900/40 to-black/80 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-12 hover:scale-[1.01] transition-transform duration-500">
-                <p className="text-[10px] text-cyan-400 tracking-[0.2em] uppercase mb-2">SERVICIO ESPECIALIZADO</p>
+              <div className="md:col-span-6 bg-gradient-to-br from-cyan-500/15 via-zinc-900/40 to-black/80 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-12 hover:scale-[1.01] transition-transform duration-500">  
                 <h3 className="text-3xl md:text-4xl font-bold tracking-wide text-white mb-4">Ascensores</h3>
                 <p className="text-sm md:text-base font-normal text-gray-300 leading-relaxed mb-6">
                   Sistemas de elevación de última generación. Instalación, mantenimiento y modernización de ascensores residenciales, comerciales e industriales.
@@ -65,7 +64,6 @@ export default function Home() {
 
               {/* ESCALERAS */}
               <div className="md:col-span-6 bg-gradient-to-br from-cyan-500/15 via-zinc-900/40 to-black/80 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-12 hover:scale-[1.01] transition-transform duration-500">
-                <p className="text-[10px] text-cyan-400 tracking-[0.2em] uppercase mb-2">SERVICIO ESPECIALIZADO</p>
                 <h3 className="text-3xl md:text-4xl font-bold tracking-wide text-white mb-4">Escaleras Eléctricas</h3>
                 <p className="text-sm md:text-base font-normal text-gray-300 leading-relaxed mb-6">
                   Soluciones eficientes en escaleras y pasillos rodantes. Diseño ergonómico, bajo consumo energético y máxima durabilidad.

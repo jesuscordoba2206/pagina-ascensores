@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { findUserByEmail, normalizeEmail, normalizeRole } from '@/lib/auth';
+import { buildSessionCookie, findUserByEmail, normalizeEmail, normalizeRole } from '@/lib/auth';
 
 export async function POST(request) {
   try {
@@ -21,11 +21,8 @@ export async function POST(request) {
       return new Response(JSON.stringify({ ok: false, error: 'Invalid credentials' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Set a cookie with the user's email to identify session for this simple example
     const headers = new Headers();
-    const cookieValue = encodeURIComponent(user.email);
-    // HttpOnly so client JS cannot read it. Include SameSite and Path for basic safety.
-    headers.append('Set-Cookie', `userEmail=${cookieValue}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}`);
+    headers.append('Set-Cookie', buildSessionCookie(user.email));
     headers.append('Content-Type', 'application/json');
 
     return new Response(JSON.stringify({ ok: true, role: normalizeRole(user.role) }), { status: 200, headers });

@@ -5,6 +5,21 @@ import { useRouter } from 'next/navigation';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import FichaTecnicaViewer from '@/components/FichaTecnicaViewer';
 
+const REPORT_MONTHS = [
+  { key: 'enero', label: 'Enero' },
+  { key: 'febrero', label: 'Febrero' },
+  { key: 'marzo', label: 'Marzo' },
+  { key: 'abril', label: 'Abril' },
+  { key: 'mayo', label: 'Mayo' },
+  { key: 'junio', label: 'Junio' },
+  { key: 'julio', label: 'Julio' },
+  { key: 'agosto', label: 'Agosto' },
+  { key: 'septiembre', label: 'Septiembre' },
+  { key: 'octubre', label: 'Octubre' },
+  { key: 'noviembre', label: 'Noviembre' },
+  { key: 'diciembre', label: 'Diciembre' },
+];
+
 function Card({ label, value, unit }) {
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
@@ -75,10 +90,25 @@ export default function ClientDashboardPage() {
   }, [router]);
 
   const activeEquipment = useMemo(() => equipments[0] || null, [equipments]);
-  const activeReportUrls = useMemo(() => {
-    if (!activeEquipment?.reportUrls || !Array.isArray(activeEquipment.reportUrls)) return [];
-    return activeEquipment.reportUrls.filter((url) => typeof url === 'string' && url.trim() !== '');
+  const activeMonthlyReports = useMemo(() => {
+    const reportUrls = Array.isArray(activeEquipment?.reportUrls) ? activeEquipment.reportUrls : [];
+
+    return REPORT_MONTHS.map((month, index) => {
+      const url = reportUrls[index];
+      const normalizedUrl = typeof url === 'string' ? url.trim() : '';
+
+      return {
+        ...month,
+        url: normalizedUrl,
+        isAvailable: normalizedUrl !== '',
+      };
+    });
   }, [activeEquipment]);
+
+  const availableMonthlyReports = useMemo(
+    () => activeMonthlyReports.filter((report) => report.isAvailable).length,
+    [activeMonthlyReports]
+  );
 
   if (loading) {
     return (
@@ -159,43 +189,34 @@ export default function ClientDashboardPage() {
                       <h3 className="mt-2 text-lg font-semibold text-white">PDF disponibles</h3>
                     </div>
                     <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
-                      {activeReportUrls.length}
+                      {availableMonthlyReports}/12
                     </span>
                   </div>
 
-                  {activeReportUrls.length === 0 ? (
-                    <p className="mt-4 text-sm text-zinc-400">
-                      Aun no tienes reportes PDF cargados para este equipo.
-                    </p>
-                  ) : (
-                    <div className="mt-4 space-y-3">
-                      {activeReportUrls.map((url, index) => (
-                        <div
-                          key={`${url}-${index}`}
-                          className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 sm:flex-row sm:items-center sm:justify-between"
-                        >
-                          <p className="text-sm text-zinc-200">Reporte PDF #{index + 1}</p>
-                          <div className="flex gap-2">
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="rounded-2xl border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:border-zinc-500"
-                            >
-                              Visualizar
-                            </a>
-                            <a
-                              href={url}
-                              download
-                              className="rounded-2xl bg-cyan-500 px-3 py-2 text-xs font-semibold text-zinc-950 transition hover:bg-cyan-400"
-                            >
-                              Descargar
-                            </a>
+                  <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {activeMonthlyReports.map((report) => (
+                      <div
+                        key={report.key}
+                        className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-4"
+                      >
+                        <p className="text-sm font-semibold text-white">{report.label}</p>
+
+                        {report.isAvailable ? (
+                          <a
+                            href={report.url}
+                            download
+                            className="mt-4 inline-flex w-full items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/90 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-950 transition hover:bg-cyan-300"
+                          >
+                            Descargar PDF
+                          </a>
+                        ) : (
+                          <div className="mt-4 rounded-xl border border-zinc-700/80 bg-zinc-900/50 px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">
+                            No disponible
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

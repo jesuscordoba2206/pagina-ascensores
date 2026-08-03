@@ -1,52 +1,52 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+
+const emptyFormData = {
+  codigoEquipo: '',
+  marcaOriginal: '',
+  modelo: '',
+  anoInstalacion: '',
+  paisOrigen: '',
+  numParadas: '',
+  tipoTraccion: '',
+  marcaMotor: '',
+  potenciaKW: '',
+  voltajeAlimentacion: '',
+  marcaControlElectrico: '',
+  tipoTecnologia: '',
+  numCablesTraccion: '',
+  diametroCable: '',
+  longitudAproximada: '',
+  capacidadKilos: '',
+  capacidadPersonas: '',
+  anchoCabina: '',
+  altoCabina: '',
+  profundidadCabina: '',
+  acabadoCabina: '',
+  tipoPiso: '',
+  tipoBotoneraCOP: '',
+  tipoAperturaPuerta: '',
+  anchoPasoPuerta: '',
+  marcaOperador: '',
+  sistemaSeguridadPuerta: '',
+  marcaLimitador: '',
+  velocidadDisparo: '',
+  tipoParacaidas: '',
+  tipoAmortiguadores: '',
+  tipoPesacargas: '',
+};
+
+function createFormData(initialData) {
+  return initialData ? { ...emptyFormData, ...initialData } : { ...emptyFormData };
+}
 
 export default function FichaTecnicaForm({ equipmentId, initialData = null, onSuccess = null }) {
-  const [formData, setFormData] = useState({
-    codigoEquipo: '',
-    marcaOriginal: '',
-    modelo: '',
-    anoInstalacion: '',
-    paisOrigen: '',
-    numParadas: '',
-    tipoTraccion: '',
-    marcaMotor: '',
-    potenciaKW: '',
-    voltajeAlimentacion: '',
-    marcaControlElectrico: '',
-    tipoTecnologia: '',
-    numCablesTraccion: '',
-    diametroCable: '',
-    longitudAproximada: '',
-    capacidadKilos: '',
-    capacidadPersonas: '',
-    anchoCabina: '',
-    altoCabina: '',
-    profundidadCabina: '',
-    acabadoCabina: '',
-    tipoPiso: '',
-    tipoBotoneraCOP: '',
-    tipoAperturaPuerta: '',
-    anchoPasoPuerta: '',
-    marcaOperador: '',
-    sistemaSeguridadPuerta: '',
-    marcaLimitador: '',
-    velocidadDisparo: '',
-    tipoParacaidas: '',
-    tipoAmortiguadores: '',
-    tipoPesacargas: '',
-  });
+  const [formData, setFormData] = useState(() => createFormData(initialData));
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    if (initialData) {
-      setFormData((prev) => ({ ...prev, ...initialData }));
-    }
-  }, [initialData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

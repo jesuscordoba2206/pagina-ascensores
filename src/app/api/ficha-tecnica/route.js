@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { requireEnterpriseRole } from '@/lib/auth';
+import { getSessionUser, normalizeRole, requireEnterpriseRole } from '@/lib/auth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET: Obtener ficha técnica por equipmentId
@@ -8,6 +8,14 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const equipmentId = searchParams.get('equipmentId');
+    const sessionUser = await getSessionUser(request);
+
+    if (!sessionUser) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!equipmentId) {
       return new Response(
@@ -18,7 +26,7 @@ export async function GET(request) {
 
     const fichaTecnica = await prisma.fichaTecnica.findUnique({
       where: { equipmentId },
-      include: { equipment: { select: { id: true, internalCode: true, type: true } } },
+      include: { equipment: { select: { id: true, userId: true, internalCode: true, type: true } } },
     });
 
     if (!fichaTecnica) {
@@ -28,7 +36,26 @@ export async function GET(request) {
       );
     }
 
-    return new Response(JSON.stringify(fichaTecnica), {
+    const isEnterprise = normalizeRole(sessionUser.role) === 'EMPRESA';
+    if (!isEnterprise && fichaTecnica.equipment?.userId !== sessionUser.id) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const responseFichaTecnica = {
+      ...fichaTecnica,
+      equipment: fichaTecnica.equipment
+        ? {
+            id: fichaTecnica.equipment.id,
+            internalCode: fichaTecnica.equipment.internalCode,
+            type: fichaTecnica.equipment.type,
+          }
+        : null,
+    };
+
+    return new Response(JSON.stringify(responseFichaTecnica), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

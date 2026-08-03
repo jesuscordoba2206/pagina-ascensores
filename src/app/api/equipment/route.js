@@ -7,6 +7,10 @@ export async function GET(request) {
     const requestedUserId = searchParams.get('userId');
     const sessionUser = await getSessionUser(request);
 
+     if (!sessionUser) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+    }
+
     let query = {};
     if (requestedUserId && sessionUser?.role === 'EMPRESA') {
       query = { where: { userId: requestedUserId } };

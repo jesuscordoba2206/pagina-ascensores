@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import { prisma } from '@/lib/prisma';
 
@@ -22,7 +23,6 @@ export default async function EmpresaPage() {
       <main className="relative pt-28 md:pt-36">
         <section className="px-6 pb-12">
           <div className="mx-auto max-w-7xl">
-            <p className="text-cyan-400 uppercase tracking-[0.35em] text-xs mb-4">Nuestros Proyectos</p>
             <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight max-w-4xl">
               Portafolio de instalaciones de transporte vertical de alto impacto.
             </h1>
@@ -53,10 +53,8 @@ export default async function EmpresaPage() {
           <div className="mx-auto max-w-7xl">
             <div className="mb-5 flex items-end justify-between gap-4">
               <div>
-                <p className="text-cyan-300 uppercase tracking-[0.28em] text-xs">Nuestros Proyectos</p>
                 <h2 className="mt-3 text-3xl md:text-4xl font-bold text-white">Instalaciones destacadas</h2>
               </div>
-              <p className="text-sm text-zinc-400">Desliza para explorar</p>
             </div>
 
             {proyectos.length === 0 ? (
@@ -70,21 +68,16 @@ export default async function EmpresaPage() {
                     key={proyecto.id}
                     className="group shrink-0 w-[300px] md:w-[360px] rounded-3xl border border-white/20 bg-white/10 backdrop-blur-md overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:bg-white/15 hover:shadow-[0_10px_45px_rgba(34,211,238,0.2)]"
                   >
-                    <div className="h-44 md:h-56 w-full overflow-hidden">
-                      <img
+                    <div className="relative h-44 md:h-56 w-full overflow-hidden">
+                      <Image
                         src={proyecto.imageUrl}
                         alt={proyecto.title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 768px) 300px, 360px"
                       />
                     </div>
-                    <div className="p-5">
-                      <h3 className="text-xl font-semibold text-white">{proyecto.title}</h3>
-                      <p className="mt-2 text-sm leading-relaxed text-zinc-200/90">
-                        {proyecto.description || 'Proyecto ejecutado por nuestro equipo de transporte vertical con enfoque en seguridad y desempeño.'}
-                      </p>
-                    </div>
-                  </article>
+                    </article>
                 ))}
               </div>
             )}

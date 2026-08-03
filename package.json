@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "node prisma/seed.js",
-    "trim:users": "node --env-file=.env --env-file=.env.local prisma/trim-users.js"
+    "trim:users": "node --env-file=.env --env-file=.env.local prisma/trim-users.js",
+    "reset:reports": "node --env-file=.env --env-file=.env.local prisma/reset-report-urls.js",
+    "cleanup:r2:reports": "node --env-file=.env --env-file=.env.local prisma/cleanup-r2-reports.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1075.0",

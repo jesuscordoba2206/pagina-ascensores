@@ -2,6 +2,21 @@ import { requireEnterpriseRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
+const MONTH_KEYS = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+
 // ---------------------------------------------------------------------------
 // R2 client (singleton per cold start)
 // ---------------------------------------------------------------------------
@@ -66,10 +81,25 @@ function extractR2KeyFromUrl(url) {
 }
 
 // ---------------------------------------------------------------------------
-// Prisma helper – keep max 3 report URLs and remove the evicted one from R2
+// Prisma helper – save report URL by month (12 slots) and replace old file for that month
 // ---------------------------------------------------------------------------
 
-async function updateEquipmentReportUrls(equipmentId, reportUrl, r2) {
+function normalizeMonthKey(value) {
+  if (!value || typeof value !== 'string') return null;
+
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+async function updateEquipmentReportUrls(equipmentId, monthKey, reportUrl, r2) {
+  const monthIndex = MONTH_KEYS.indexOf(monthKey);
+  if (monthIndex === -1) {
+    return { error: 'Invalid month value', status: 400 };
+  }
+
   const equipment = await prisma.equipment.findUnique({
     where: { id: equipmentId },
     select: { reportUrls: true },
@@ -79,9 +109,14 @@ async function updateEquipmentReportUrls(equipmentId, reportUrl, r2) {
     return { error: 'Equipment not found', status: 404 };
   }
 
-  const existing = equipment.reportUrls || [];
-  const reportUrls = [reportUrl, ...existing].slice(0, 3);
-  const evictedUrl = existing.length >= 3 ? existing[2] : null;
+  const existing = Array.isArray(equipment.reportUrls) ? equipment.reportUrls : [];
+  const reportUrls = Array.from({ length: 12 }, (_, index) => {
+    const value = existing[index];
+    return typeof value === 'string' ? value : '';
+  });
+
+  const replacedUrl = reportUrls[monthIndex] || null;
+  reportUrls[monthIndex] = reportUrl;
 
   const updated = await prisma.equipment.update({
     where: { id: equipmentId },
@@ -89,8 +124,8 @@ async function updateEquipmentReportUrls(equipmentId, reportUrl, r2) {
     select: { reportUrls: true },
   });
 
-  if (evictedUrl) {
-    const oldKey = extractR2KeyFromUrl(evictedUrl);
+  if (replacedUrl && replacedUrl !== reportUrl) {
+    const oldKey = extractR2KeyFromUrl(replacedUrl);
     if (oldKey) {
       try {
         await r2.send(
@@ -131,6 +166,7 @@ export async function POST(request) {
     const file = formData.get('file');
     const category = String(formData.get('category') || 'reports');
     const equipmentId = String(formData.get('equipmentId') || '').trim();
+    const monthKey = normalizeMonthKey(formData.get('month'));
 
     if (!file || !(file instanceof File)) {
       return new Response(JSON.stringify({ error: 'Missing file' }), {
@@ -146,6 +182,12 @@ export async function POST(request) {
     }
 
     if (equipmentId) {
+      if (!monthKey) {
+        return new Response(JSON.stringify({ error: 'Month is required when equipmentId is provided' }), {
+          status: 400, headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
       const exists = await prisma.equipment.findUnique({
         where: { id: equipmentId },
         select: { id: true },
@@ -160,7 +202,9 @@ export async function POST(request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const timestamp = Date.now();
     const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const key = `${category}/${timestamp}-${sanitizedName}`;
+    const key = equipmentId && monthKey
+      ? `${category}/${equipmentId}/${monthKey}/${timestamp}-${sanitizedName}`
+      : `${category}/${timestamp}-${sanitizedName}`;
 
     await r2.send(
       new PutObjectCommand({
@@ -174,7 +218,7 @@ export async function POST(request) {
     const url = buildPublicUrl(key);
 
     if (equipmentId) {
-      const reportResult = await updateEquipmentReportUrls(equipmentId, url, r2);
+      const reportResult = await updateEquipmentReportUrls(equipmentId, monthKey, url, r2);
       if (reportResult.error) {
         // Best-effort cleanup of the just-uploaded file
         try {
@@ -191,7 +235,7 @@ export async function POST(request) {
         });
       }
 
-      return new Response(JSON.stringify({ url, key, reportUrls: reportResult.reportUrls }), {
+      return new Response(JSON.stringify({ url, key, month: monthKey, reportUrls: reportResult.reportUrls }), {
         status: 201, headers: { 'Content-Type': 'application/json' },
       });
     }

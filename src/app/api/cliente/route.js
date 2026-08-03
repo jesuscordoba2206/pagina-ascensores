@@ -1,7 +1,10 @@
 import { prisma } from '@/lib/prisma';
-import { normalizeEmail, normalizeOptionalText, requireEnterpriseRole, sanitizeUser } from '@/lib/auth';
+import { normalizeEmail, normalizeOptionalText, requireEnterpriseRole, toPublicUser } from '@/lib/auth';
 
 export async function GET(request) {
+  const unauthorized = await requireEnterpriseRole(request);
+  if (unauthorized) return unauthorized;
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -11,7 +14,7 @@ export async function GET(request) {
         where: { id },
         include: { equipments: { orderBy: { createdAt: 'desc' } } },
       });
-      return new Response(JSON.stringify(sanitizeUser(user)), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify(toPublicUser(user)), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     const clients = await prisma.user.findMany({
@@ -19,7 +22,7 @@ export async function GET(request) {
       include: { equipments: true },
       orderBy: { createdAt: 'desc' },
     });
-    return new Response(JSON.stringify(clients.map(sanitizeUser)), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify(clients.map(toPublicUser)), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
@@ -45,7 +48,7 @@ export async function PUT(request) {
       },
       include: { equipments: true },
     });
-    return new Response(JSON.stringify(sanitizeUser(updated)), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify(toPublicUser(updated)), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }

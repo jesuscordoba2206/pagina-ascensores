@@ -1,7 +1,34 @@
 import { prisma } from '@/lib/prisma';
 import { requireEnterpriseRole } from '@/lib/auth';
 
+const MONTH_KEYS = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+
+function normalizeMonthKey(value) {
+  if (!value || typeof value !== 'string') return null;
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 export async function GET(request) {
+  const unauthorized = await requireEnterpriseRole(request);
+  if (unauthorized) return unauthorized;
+
   try {
     const { searchParams } = new URL(request.url);
     const equipmentId = searchParams.get('equipmentId');
@@ -28,9 +55,15 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const { equipmentId, reportUrl } = body;
+    const monthKey = normalizeMonthKey(body.month);
 
-    if (!equipmentId || !reportUrl) {
+    if (!equipmentId || !reportUrl || !monthKey) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const monthIndex = MONTH_KEYS.indexOf(monthKey);
+    if (monthIndex === -1) {
+      return new Response(JSON.stringify({ error: 'Invalid month value' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     const equipment = await prisma.equipment.findUnique({ where: { id: equipmentId } });
@@ -38,12 +71,12 @@ export async function POST(request) {
       return new Response(JSON.stringify({ error: 'Equipment not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const reportUrls = equipment.reportUrls || [];
-    reportUrls.unshift(reportUrl);
-
-    if (reportUrls.length > 3) {
-      reportUrls.pop();
-    }
+    const existing = Array.isArray(equipment.reportUrls) ? equipment.reportUrls : [];
+    const reportUrls = Array.from({ length: 12 }, (_, index) => {
+      const value = existing[index];
+      return typeof value === 'string' ? value : '';
+    });
+    reportUrls[monthIndex] = reportUrl;
 
     const updated = await prisma.equipment.update({
       where: { id: equipmentId },

@@ -2,9 +2,40 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import FichaTecnicaForm from '@/components/FichaTecnicaForm';
 import FichaTecnicaViewer from '@/components/FichaTecnicaViewer';
+
+const REPORT_MONTHS = [
+  { key: 'enero', label: 'Enero' },
+  { key: 'febrero', label: 'Febrero' },
+  { key: 'marzo', label: 'Marzo' },
+  { key: 'abril', label: 'Abril' },
+  { key: 'mayo', label: 'Mayo' },
+  { key: 'junio', label: 'Junio' },
+  { key: 'julio', label: 'Julio' },
+  { key: 'agosto', label: 'Agosto' },
+  { key: 'septiembre', label: 'Septiembre' },
+  { key: 'octubre', label: 'Octubre' },
+  { key: 'noviembre', label: 'Noviembre' },
+  { key: 'diciembre', label: 'Diciembre' },
+];
+
+function createEmptyMonthlyReportFiles() {
+  return REPORT_MONTHS.reduce((acc, month) => {
+    acc[month.key] = null;
+    return acc;
+  }, {});
+}
+
+function getMonthlyReportCount(reportUrls) {
+  if (!Array.isArray(reportUrls)) return 0;
+  return REPORT_MONTHS.reduce((count, _, index) => {
+    const url = reportUrls[index];
+    return typeof url === 'string' && url.trim() !== '' ? count + 1 : count;
+  }, 0);
+}
 
 function InputField({ label, value, onChange, placeholder = '', type = 'text', required = false }) {
   return (
@@ -46,6 +77,13 @@ const emptyClientEquipmentDraft = {
   capacity: '',
 };
 
+const emptyPortfolioForm = {
+  title: '',
+  description: '',
+  imageFile: null,
+  removeImage: false,
+};
+
 export default function Page() {
   const router = useRouter();
   const [sessionRole, setSessionRole] = useState(null);
@@ -66,11 +104,13 @@ export default function Page() {
 
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedEquipmentForReport, setSelectedEquipmentForReport] = useState(null);
-  const [reportFile, setReportFile] = useState(null);
+  const [reportFilesByMonth, setReportFilesByMonth] = useState(createEmptyMonthlyReportFiles);
   const [isUploadingReport, setIsUploadingReport] = useState(false);
 
   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
-  const [portfolioForm, setPortfolioForm] = useState({ title: '', description: '', imageFile: null });
+  const [portfolioForm, setPortfolioForm] = useState({ ...emptyPortfolioForm });
+  const [portfolioPreview, setPortfolioPreview] = useState(null);
+  const [editingProject, setEditingProject] = useState(null);
 
   const [showFichaTecnicaModal, setShowFichaTecnicaModal] = useState(false);
   const [selectedEquipmentForFicha, setSelectedEquipmentForFicha] = useState(null);
@@ -245,7 +285,14 @@ export default function Page() {
   }
 
   async function handleUploadReport() {
-    if (!reportFile || !selectedEquipmentForReport) return;
+    if (!selectedEquipmentForReport) return;
+
+    const monthsToUpload = REPORT_MONTHS.filter((month) => reportFilesByMonth[month.key] instanceof File);
+    if (monthsToUpload.length === 0) {
+      alert('Selecciona al menos un archivo PDF para subir.');
+      return;
+    }
+
     setIsUploadingReport(true);
 
     const readSafeErrorMessage = async (response, fallbackMessage) => {
@@ -258,31 +305,35 @@ export default function Page() {
     };
 
     try {
-      const pdfFile = reportFile.type === 'application/pdf'
-        ? reportFile
-        : new File([reportFile], reportFile.name, { type: 'application/pdf' });
+      for (const month of monthsToUpload) {
+        const originalFile = reportFilesByMonth[month.key];
+        const pdfFile = originalFile.type === 'application/pdf'
+          ? originalFile
+          : new File([originalFile], originalFile.name, { type: 'application/pdf' });
 
-      const formData = new FormData();
-      formData.append('file', pdfFile, pdfFile.name);
-      formData.append('category', `reports/${selectedClient.id}`);
-      formData.append('equipmentId', selectedEquipmentForReport.id);
+        const formData = new FormData();
+        formData.append('file', pdfFile, pdfFile.name);
+        formData.append('category', `reports/${selectedClient.id}`);
+        formData.append('equipmentId', selectedEquipmentForReport.id);
+        formData.append('month', month.key);
 
-      const uploadResponse = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
 
-      if (!uploadResponse.ok) {
-        const errorMsg = await readSafeErrorMessage(uploadResponse, `Error HTTP ${uploadResponse.status}`);
-        console.error('[handleUploadReport] Upload API error:', errorMsg);
-        alert(`❌ No se pudo subir el PDF:\n${errorMsg}`);
-        return;
+        if (!uploadResponse.ok) {
+          const errorMsg = await readSafeErrorMessage(uploadResponse, `Error HTTP ${uploadResponse.status}`);
+          console.error(`[handleUploadReport] Upload API error (${month.label}):`, errorMsg);
+          alert(`❌ No se pudo subir el PDF de ${month.label}:\n${errorMsg}`);
+          return;
+        }
       }
 
       await loadClients();
       setShowReportModal(false);
-      setReportFile(null);
-      alert('✅ Reporte PDF subido y guardado correctamente en MongoDB Atlas.');
+      setReportFilesByMonth(createEmptyMonthlyReportFiles());
+      alert('✅ Reportes PDF mensuales subidos y guardados correctamente en MongoDB Atlas.');
     } catch (err) {
       console.error('[handleUploadReport] Unexpected error:', err);
       alert(`❌ Error subiendo el reporte:\n${err.message}`);
@@ -291,33 +342,98 @@ export default function Page() {
     }
   }
 
+  function handlePortfolioImageChange(file) {
+    if (portfolioPreview) URL.revokeObjectURL(portfolioPreview);
+    setPortfolioPreview(file ? URL.createObjectURL(file) : null);
+    setPortfolioForm((prev) => ({ ...prev, imageFile: file, removeImage: false }));
+  }
+
+  function clearPortfolioImage() {
+    if (portfolioForm.imageFile) {
+      if (portfolioPreview) URL.revokeObjectURL(portfolioPreview);
+      setPortfolioPreview(editingProject ? editingProject.imageUrl || null : null);
+      setPortfolioForm((prev) => ({ ...prev, imageFile: null, removeImage: false }));
+    } else if (editingProject) {
+      setPortfolioForm((prev) => ({ ...prev, removeImage: true }));
+    }
+  }
+
+  function openCreateProjectModal() {
+    setEditingProject(null);
+    setPortfolioForm({ ...emptyPortfolioForm });
+    setPortfolioPreview(null);
+    setShowPortfolioModal(true);
+  }
+
+  function openEditProjectModal(project) {
+    setEditingProject(project);
+    setPortfolioForm({
+      title: project.title || '',
+      description: project.description || '',
+      imageFile: null,
+      removeImage: false,
+    });
+    setPortfolioPreview(project.imageUrl || null);
+    setShowPortfolioModal(true);
+  }
+
   async function handleUploadPortfolio() {
-    if (!portfolioForm.imageFile || !portfolioForm.title) {
-      alert('Título y archivo son requeridos');
+    const isEdit = Boolean(editingProject);
+
+    if (!isEdit && !portfolioForm.imageFile) {
+      alert('Selecciona una imagen para el proyecto');
       return;
     }
+
     setSaving(true);
     try {
       const formData = new FormData();
-      formData.append('title', portfolioForm.title);
-      formData.append('description', portfolioForm.description || '');
-      formData.append('image', portfolioForm.imageFile, portfolioForm.imageFile.name);
+      formData.append('title', portfolioForm.title.trim());
+      formData.append('description', portfolioForm.description.trim());
+      if (portfolioForm.imageFile) {
+        formData.append('image', portfolioForm.imageFile, portfolioForm.imageFile.name);
+      }
+      if (isEdit) {
+        formData.append('id', editingProject.id);
+        formData.append('removeImage', portfolioForm.removeImage ? 'true' : 'false');
+      }
 
       const res = await fetch('/api/projects', {
-        method: 'POST',
+        method: isEdit ? 'PUT' : 'POST',
         body: formData,
       });
 
       if (res.ok) {
         await loadProjects();
         setShowPortfolioModal(false);
-        setPortfolioForm({ title: '', description: '', imageFile: null });
+        setEditingProject(null);
+        setPortfolioForm({ ...emptyPortfolioForm });
+        setPortfolioPreview(null);
       } else {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData?.error || 'Error agregando proyecto');
+        throw new Error(errorData?.error || 'Error guardando proyecto');
       }
     } catch (err) {
-      alert('Error uploading project: ' + err.message);
+      alert('Error: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteProject(project) {
+    if (!window.confirm('¿Eliminar permanentemente este proyecto?\nEsta acción no se puede deshacer.')) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/project?id=${project.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        await loadProjects();
+        alert('✅ Proyecto eliminado correctamente.');
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData?.error || `Error HTTP ${res.status}`);
+      }
+    } catch (err) {
+      alert('Error eliminando proyecto: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -639,11 +755,12 @@ export default function Page() {
                           <button
                             onClick={() => {
                               setSelectedEquipmentForReport(equipment);
+                              setReportFilesByMonth(createEmptyMonthlyReportFiles());
                               setShowReportModal(true);
                             }}
                             className="rounded-3xl bg-blue-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-blue-400"
                           >
-                            Reportes ({(equipment.reportUrls || []).length})
+                            Reportes ({getMonthlyReportCount(equipment.reportUrls)}/12)
                           </button>
                         </div>
 
@@ -676,9 +793,9 @@ export default function Page() {
 
             <section className="rounded-[2rem] border border-zinc-800 bg-zinc-900/40 p-6">
               <div className="flex items-center justify-between gap-4 mb-6">
-                <h3 className="text-xl font-semibold">Portafolio ({projects.length})</h3>
+            <h3 className="text-xl font-semibold">Portafolio ({projects.length})</h3>
                 <button
-                  onClick={() => setShowPortfolioModal(true)}
+                  onClick={openCreateProjectModal}
                   className="rounded-3xl bg-cyan-500 px-5 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-400"
                 >
                   Agregar proyecto
@@ -687,15 +804,35 @@ export default function Page() {
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {projects.map((project) => (
-                  <div key={project.id} className="overflow-hidden rounded-[1.5rem] border border-zinc-800 bg-zinc-950/60">
-                    <div className="relative h-40 overflow-hidden bg-zinc-900">
+                  <div key={project.id} className="relative overflow-hidden rounded-[1.5rem] border border-zinc-800 bg-zinc-950/60">
+                    <div className="relative h-52 overflow-hidden bg-zinc-900">
                       {project.imageUrl && (
-                        <img src={project.imageUrl} alt={project.title} className="h-full w-full object-cover" loading="lazy" />
+                        <Image src={project.imageUrl} alt="Imagen del proyecto" fill className="object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
                       )}
                     </div>
+                    <div className="absolute top-3 right-3 flex items-center gap-2">
+                      <button
+                        onClick={() => openEditProjectModal(project)}
+                        disabled={saving}
+                        title="Editar proyecto"
+                        className="rounded-full border border-zinc-700 bg-zinc-900/80 px-2.5 py-1 text-xs font-semibold text-zinc-300 transition hover:border-cyan-500 hover:text-cyan-400 disabled:opacity-40 backdrop-blur"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProject(project)}
+                        disabled={saving}
+                        title="Eliminar proyecto"
+                        className="rounded-full border border-rose-500/40 bg-rose-500/10 px-2.5 py-1 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/25 disabled:opacity-40 backdrop-blur"
+                      >
+                        ×
+                      </button>
+                    </div>
                     <div className="p-4">
-                      <h4 className="font-semibold text-white">{project.title}</h4>
-                      <p className="mt-2 text-sm text-zinc-400">{project.description || 'Proyecto sin descripción.'}</p>
+                      <p className="truncate text-sm font-semibold text-white">{project.title || 'Proyecto sin titulo'}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-zinc-400">
+                        {project.description || 'Sin descripcion'}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -874,33 +1011,59 @@ export default function Page() {
 
       {showReportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
-          <div className="w-full max-w-md rounded-[2rem] border border-zinc-800 bg-zinc-950/95 p-6">
-            <h3 className="text-2xl font-semibold mb-6">Subir reporte PDF</h3>
-            <label className="block">
-              <span className="text-sm text-zinc-300">Archivo PDF</span>
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => setReportFile(e.target.files?.[0] || null)}
-                className="mt-2 w-full rounded-3xl border border-zinc-800 bg-zinc-950/80 px-3 py-2 text-sm text-white"
-              />
-            </label>
-            {reportFile && <p className="mt-2 text-sm text-zinc-400">Archivo: {reportFile.name}</p>}
-            {selectedEquipmentForReport?.reportUrls && selectedEquipmentForReport.reportUrls.length > 0 && (
-              <div className="mt-4 text-xs text-zinc-400">
-                <p className="font-semibold mb-2">Reportes guardados ({selectedEquipmentForReport.reportUrls.length}/3):</p>
-                <ul className="space-y-1">
-                  {selectedEquipmentForReport.reportUrls.map((url, idx) => (
-                    <li key={idx} className="truncate">{idx + 1}. Reporte guardado</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+          <div className="w-full max-w-3xl rounded-[2rem] border border-zinc-800 bg-zinc-950/95 p-6">
+            <h3 className="text-2xl font-semibold mb-6">Subir reportes PDF por mes</h3>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {REPORT_MONTHS.map((month, index) => {
+                const existingUrl = selectedEquipmentForReport?.reportUrls?.[index];
+                const hasExistingFile = typeof existingUrl === 'string' && existingUrl.trim() !== '';
+
+                return (
+                  <label
+                    key={month.key}
+                    className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-semibold text-zinc-100">{month.label}</span>
+                      <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                        hasExistingFile
+                          ? 'border border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+                          : 'border border-zinc-700 bg-zinc-900 text-zinc-500'
+                      }`}>
+                        {hasExistingFile ? 'Cargado' : 'Vacío'}
+                      </span>
+                    </div>
+
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setReportFilesByMonth((prev) => ({ ...prev, [month.key]: file }));
+                      }}
+                      className="mt-3 w-full rounded-2xl border border-zinc-800 bg-zinc-950/80 px-3 py-2 text-sm text-white"
+                    />
+
+                    {reportFilesByMonth[month.key] && (
+                      <p className="mt-2 truncate text-xs text-cyan-300">
+                        Nuevo: {reportFilesByMonth[month.key].name}
+                      </p>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+
+            <p className="mt-4 text-xs text-zinc-400">
+              Cada archivo se guarda asociado a su mes. Si subes uno nuevo para el mismo mes, reemplaza el anterior.
+            </p>
+
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => {
                   setShowReportModal(false);
-                  setReportFile(null);
+                  setReportFilesByMonth(createEmptyMonthlyReportFiles());
                 }}
                 className="flex-1 rounded-3xl border border-zinc-700 px-4 py-2 text-sm font-semibold"
               >
@@ -908,7 +1071,7 @@ export default function Page() {
               </button>
               <button
                 onClick={handleUploadReport}
-                disabled={!reportFile || isUploadingReport}
+                disabled={isUploadingReport}
                 className="flex-1 rounded-3xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
               >
                 {isUploadingReport ? 'Subiendo...' : 'Subir'}
@@ -921,42 +1084,103 @@ export default function Page() {
       {showPortfolioModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
           <div className="w-full max-w-md rounded-[2rem] border border-zinc-800 bg-zinc-950/95 p-6">
-            <h3 className="text-2xl font-semibold mb-6">Agregar proyecto</h3>
+            <h3 className="text-2xl font-semibold mb-6">{editingProject ? 'Editar proyecto' : 'Agregar proyecto'}</h3>
             <div className="space-y-4">
               <InputField
-                label="Título"
+                label="Titulo"
                 value={portfolioForm.title}
-                onChange={(value) => setPortfolioForm({ ...portfolioForm, title: value })}
+                onChange={(value) => setPortfolioForm((prev) => ({ ...prev, title: value }))}
+                placeholder="Ej. Ascensor panoramico torre norte"
                 required
               />
-              <InputField
-                label="Descripción"
-                value={portfolioForm.description}
-                onChange={(value) => setPortfolioForm({ ...portfolioForm, description: value })}
-              />
+
+              <label className="block text-sm text-zinc-300">
+                <span className="text-xs uppercase tracking-[0.18em] text-zinc-500">Descripcion</span>
+                <textarea
+                  value={portfolioForm.description}
+                  onChange={(e) => setPortfolioForm((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe brevemente el proyecto"
+                  rows={4}
+                  className="mt-2 w-full rounded-3xl border border-zinc-800 bg-zinc-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+                />
+              </label>
+
               <label className="block">
                 <span className="text-sm text-zinc-300">Imagen del proyecto</span>
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => setPortfolioForm({ ...portfolioForm, imageFile: e.target.files?.[0] || null })}
+                  onChange={(e) => handlePortfolioImageChange(e.target.files?.[0] || null)}
                   className="mt-2 w-full rounded-3xl border border-zinc-800 bg-zinc-950/80 px-3 py-2 text-sm text-white"
                 />
               </label>
+
+              {portfolioForm.imageFile ? (
+                <div className="relative mt-3 h-44">
+                  <Image
+                    src={portfolioPreview}
+                    alt="Vista previa del proyecto"
+                    fill
+                    className="rounded-3xl border border-zinc-800 object-cover"
+                  />
+                  <button
+                    onClick={clearPortfolioImage}
+                    title="Quitar imagen"
+                    aria-label="Quitar imagen"
+                    className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700/60 bg-black/60 text-lg leading-none text-zinc-200 backdrop-blur transition hover:border-rose-500/60 hover:bg-rose-500/20 hover:text-white"
+                  >
+                    ×
+                  </button>
+                  <span className="absolute bottom-3 left-3 max-w-[70%] truncate rounded-full bg-black/60 px-3 py-1 text-xs text-zinc-200 backdrop-blur">
+                    {portfolioForm.imageFile?.name}
+                  </span>
+                </div>
+              ) : editingProject ? (
+                portfolioForm.removeImage ? (
+                  <p className="mt-3 text-xs text-rose-400">Se eliminará la imagen actual al guardar.</p>
+                ) : (
+                  <div className="relative mt-3 h-44">
+                    {portfolioPreview && (
+                      <Image
+                        src={portfolioPreview}
+                        alt="Imagen actual del proyecto"
+                        fill
+                        className="rounded-3xl border border-zinc-800 object-cover"
+                      />
+                    )}
+                    <button
+                      onClick={clearPortfolioImage}
+                      title="Eliminar imagen actual"
+                      aria-label="Eliminar imagen actual"
+                      className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700/60 bg-black/60 text-lg leading-none text-zinc-200 backdrop-blur transition hover:border-rose-500/60 hover:bg-rose-500/20 hover:text-white"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )
+              ) : (
+                <p className="mt-3 text-xs text-zinc-500">No se ha seleccionado ninguna imagen.</p>
+              )}
             </div>
             <div className="mt-6 flex gap-3">
               <button
-                onClick={() => setShowPortfolioModal(false)}
+                onClick={() => {
+                  setShowPortfolioModal(false);
+                  setEditingProject(null);
+                  if (portfolioPreview && portfolioForm.imageFile) URL.revokeObjectURL(portfolioPreview);
+                  setPortfolioPreview(null);
+                  setPortfolioForm({ ...emptyPortfolioForm });
+                }}
                 className="flex-1 rounded-3xl border border-zinc-700 px-4 py-2 text-sm font-semibold"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleUploadPortfolio}
-                disabled={!portfolioForm.imageFile || saving}
+                disabled={saving || (!editingProject && !portfolioForm.imageFile)}
                 className="flex-1 rounded-3xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
               >
-                {saving ? 'Subiendo...' : 'Agregar'}
+                {saving ? 'Guardando...' : editingProject ? 'Guardar' : 'Agregar'}
               </button>
             </div>
           </div>
@@ -984,6 +1208,7 @@ export default function Page() {
             </div>
             <div className="overflow-y-auto flex-1 p-6">
               <FichaTecnicaForm
+                key={`${selectedEquipmentForFicha.id}-${currentFichaTecnica?.id || 'new'}`}
                 equipmentId={selectedEquipmentForFicha.id}
                 initialData={currentFichaTecnica}
                 onSuccess={handleFichaTecnicaSaved}

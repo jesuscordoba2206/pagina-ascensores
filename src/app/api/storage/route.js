@@ -6,16 +6,34 @@ function sanitizeFileName(name) {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
+function sanitizeCategory(category) {
+  const normalized = String(category || 'reports').trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+
+  if (!normalized || normalized.includes('..') || normalized.startsWith('/')) {
+    return null;
+  }
+
+  if (!/^[a-zA-Z0-9/_-]+$/.test(normalized)) {
+    return null;
+  }
+
+  return normalized;
+}
+
 export async function POST(request) {
   const unauthorized = await requireEnterpriseRole(request);
   if (unauthorized) return unauthorized;
 
   const formData = await request.formData();
   const file = formData.get('file');
-  const category = String(formData.get('category') || 'reports');
+  const category = sanitizeCategory(formData.get('category'));
 
   if (!file || !(file instanceof File)) {
     return new Response(JSON.stringify({ error: 'Missing file upload' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  if (!category) {
+    return new Response(JSON.stringify({ error: 'Invalid category' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
 
   const filename = sanitizeFileName(file.name || `upload-${Date.now()}`);
