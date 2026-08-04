@@ -1,24 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { requireEnterpriseRole } from '@/lib/auth';
-import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
-
-function getR2Client() {
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-
-  if (!accountId || !accessKeyId || !secretAccessKey) {
-    throw new Error(
-      'Cloudflare R2 credentials missing. Define R2_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY in .env.local'
-    );
-  }
-
-  return new S3Client({
-    region: 'auto',
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId, secretAccessKey },
-  });
-}
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { getR2Client } from '@/lib/r2';
 
 function extractR2KeyFromUrl(url) {
   if (!url || typeof url !== 'string') return null;
