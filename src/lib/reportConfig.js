@@ -1,0 +1,101 @@
+export const REPORT_COMPANY_CONFIG = {
+  nombreEmpresa: 'ELEVATORS COMPANY ANTIOQUIA S.A.S',
+  logoUrl: '/logo-v2.png',
+  email: 'Elevatorscompanyantioquia@mail.com',
+  telefonos: '310 5751970 - 310 6519565',
+  nit: '901439284',
+};
+
+export const REPORT_CHECKLISTS = {
+  ascensor: [
+    'Limpieza máquina',
+    'Niveles aceite',
+    'Zapatas freno',
+    'Poleas',
+    'Seguridades cuarto máquinas',
+    'Regulador velocidad',
+    'Conexiones control',
+    'Aseo cuarto máquinas',
+    'Contactos/micros puertas',
+    'Lubricar guías cabina/contrapeso',
+    'Zapatas cabina/contrapeso',
+    'Lubricar correderas/colgantes',
+    'Limpieza quicios',
+    'Lubricación operador puertas',
+    'Barrera infrarroja',
+    'Revisión cables tracción',
+    'Fugas aceite cilindro',
+    'Línea hidráulica',
+    'Kit emergencia',
+    'Señalización',
+    'Seguridades cabina',
+    'Límites recorrido',
+    'Aseo foso',
+  ],
+  escalera: [
+    'Limpieza máquina',
+    'Niveles aceite',
+    'Zapatas freno',
+    'Estado cadenas',
+    'Seguridades embarque sup.',
+    'Guiadores pasos',
+    'Micros seguridad',
+    'Guías banda pasamanos',
+    'Sistema lubricación',
+    'Tensión correas/bandas',
+    'Contactores',
+    'Ajuste conexiones control',
+    'Fugas aceite',
+    'Línea hidráulica',
+    'Mando control manual',
+    'Señalización',
+    'Seguridades embarque inf.',
+    'Revisión pasos',
+  ],
+  puerta: [
+    'Limpieza máquina',
+    'Niveles aceite',
+    'Zapatas freno',
+    'Poleas',
+    'Seguridades puerta',
+    'Fugas aceite máquina',
+    'Límites recorrido',
+    'Contactos/micros',
+    'Sensores tráfico',
+    'Sirena tráfico',
+    'Lubricar correderas',
+    'Lubricar guías',
+    'Sistema manual',
+    'Señalización',
+  ],
+};
+
+export function createChecklistState(items) {
+  return items.map((label) => ({ label, checked: false }));
+}
+
+export function createEmptyReportDraft({ clientName = '', building = '', equipment = null, monthLabel = '' } = {}) {
+  return {
+    cliente: clientName,
+    direccion: building,
+    fecha: new Date().toISOString().slice(0, 10),
+    ciudad: 'Medellín',
+    equipoAscensor: equipment?.type === 'Ascensor',
+    equipoEscaleraPuerta: equipment?.type && equipment.type !== 'Ascensor',
+    tipoServicio: {
+      preventivo: true,
+      correctivo: false,
+      inspeccion: false,
+    },
+    equipoCodigo: equipment?.internalCode || '',
+    mes: monthLabel,
+    observaciones: '',
+    firmaEmpresa: '',
+    firmaCliente: '',
+    secciones: {
+      ascensor: createChecklistState(REPORT_CHECKLISTS.ascensor),
+      escalera: createChecklistState(REPORT_CHECKLISTS.escalera),
+      puerta: createChecklistState(REPORT_CHECKLISTS.puerta),
+    },
+  };
+}

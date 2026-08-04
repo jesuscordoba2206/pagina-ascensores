@@ -6,6 +6,8 @@ import Image from 'next/image';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import FichaTecnicaForm from '@/components/FichaTecnicaForm';
 import FichaTecnicaViewer from '@/components/FichaTecnicaViewer';
+import MonthlyMaintenanceReport from '@/components/MonthlyMaintenanceReport';
+import { createEmptyReportDraft } from '@/lib/reportConfig';
 
 const REPORT_MONTHS = [
   { key: 'enero', label: 'Enero' },
@@ -106,6 +108,10 @@ export default function Page() {
   const [selectedEquipmentForReport, setSelectedEquipmentForReport] = useState(null);
   const [reportFilesByMonth, setReportFilesByMonth] = useState(createEmptyMonthlyReportFiles);
   const [isUploadingReport, setIsUploadingReport] = useState(false);
+  const [showReportBuilderModal, setShowReportBuilderModal] = useState(false);
+  const [selectedReportMonth, setSelectedReportMonth] = useState(null);
+  const [reportDraft, setReportDraft] = useState(null);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
   const [portfolioForm, setPortfolioForm] = useState({ ...emptyPortfolioForm });
@@ -337,6 +343,149 @@ export default function Page() {
     } catch (err) {
       console.error('[handleUploadReport] Unexpected error:', err);
       alert(`❌ Error subiendo el reporte:\n${err.message}`);
+    } finally {
+      setIsUploadingReport(false);
+    }
+  }
+
+  async function uploadMonthlyReportFile(monthKey, file) {
+    if (!selectedEquipmentForReport || !selectedClient || !file) return false;
+
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    formData.append('category', `reports/${selectedClient.id}`);
+    formData.append('equipmentId', selectedEquipmentForReport.id);
+    formData.append('month', monthKey);
+
+    const uploadResponse = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!uploadResponse.ok) {
+      const errorData = await uploadResponse.json().catch(() => ({}));
+      throw new Error(errorData?.error || `Error HTTP ${uploadResponse.status}`);
+    }
+
+    return true;
+  }
+
+  function handleReportFileSelected(monthKey, file) {
+    setReportFilesByMonth((prev) => ({ ...prev, [monthKey]: file || null }));
+  }
+
+  function openReportBuilder(month) {
+    setSelectedReportMonth(month);
+    setReportDraft(createEmptyReportDraft({
+      clientName: selectedClient?.name || '',
+      building: selectedClient?.building || '',
+      equipment: selectedEquipmentForReport,
+      monthLabel: month.label,
+    }));
+    setShowReportBuilderModal(true);
+  }
+
+  function closeReportBuilder() {
+    setShowReportBuilderModal(false);
+    setSelectedReportMonth(null);
+    setReportDraft(null);
+  }
+
+  async function createPdfFromDraft(draft, month) {
+    const response = await fetch('/api/report/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clienteId: selectedClient?.id,
+        equipmentId: selectedEquipmentForReport?.id,
+        month: month.key,
+        monthLabel: month.label,
+        report: draft,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData?.error || `Error HTTP ${response.status}`);
+    }
+
+    const payload = await response.json();
+    if (!payload?.base64 || !payload?.fileName) {
+      throw new Error('La API no devolvió un PDF válido');
+    }
+
+    const byteCharacters = atob(payload.base64);
+    const byteArray = new Uint8Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i += 1) {
+      byteArray[i] = byteCharacters.charCodeAt(i);
+    }
+
+    return {
+      blob: new Blob([byteArray], { type: 'application/pdf' }),
+      fileName: payload.fileName,
+    };
+  }
+
+  function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleGenerateAndUploadReport() {
+    if (!reportDraft || !selectedReportMonth) return;
+
+    setIsGeneratingReport(true);
+    try {
+      const { blob, fileName } = await createPdfFromDraft(reportDraft, selectedReportMonth);
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+      await uploadMonthlyReportFile(selectedReportMonth.key, file);
+      setReportFilesByMonth((prev) => ({ ...prev, [selectedReportMonth.key]: file }));
+      downloadBlob(blob, fileName);
+      await loadClients();
+      closeReportBuilder();
+      alert('✅ Reporte generado, descargado y subido correctamente.');
+    } catch (err) {
+      alert(`❌ No se pudo generar el reporte:\n${err.message}`);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  }
+
+  async function handleDownloadExistingReport(url, monthLabel) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`No se pudo descargar el PDF (${response.status})`);
+      }
+      const blob = await response.blob();
+      const safeClientName = (selectedClient?.name || 'cliente').replace(/\s+/g, '-').toLowerCase();
+      const safeCode = (selectedEquipmentForReport?.internalCode || 'equipo').replace(/\s+/g, '-').toLowerCase();
+      downloadBlob(blob, `reporte-${safeClientName}-${safeCode}-${monthLabel.toLowerCase()}.pdf`);
+    } catch (err) {
+      alert(`❌ Error descargando reporte:\n${err.message}`);
+    }
+  }
+
+  async function handleUploadSingleMonth(monthKey) {
+    const file = reportFilesByMonth[monthKey];
+    if (!(file instanceof File)) {
+      alert('Selecciona un archivo PDF antes de subirlo.');
+      return;
+    }
+
+    setIsUploadingReport(true);
+    try {
+      await uploadMonthlyReportFile(monthKey, file);
+      await loadClients();
+      alert('✅ PDF subido correctamente.');
+    } catch (err) {
+      alert(`❌ Error al subir PDF:\n${err.message}`);
     } finally {
       setIsUploadingReport(false);
     }
@@ -1034,9 +1183,10 @@ export default function Page() {
               {REPORT_MONTHS.map((month, index) => {
                 const existingUrl = selectedEquipmentForReport?.reportUrls?.[index];
                 const hasExistingFile = typeof existingUrl === 'string' && existingUrl.trim() !== '';
+                const pendingFile = reportFilesByMonth[month.key];
 
                 return (
-                  <label
+                  <div
                     key={month.key}
                     className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4"
                   >
@@ -1046,9 +1196,46 @@ export default function Page() {
                         hasExistingFile
                           ? 'border border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
                           : 'border border-zinc-700 bg-zinc-900 text-zinc-500'
-                      }`}>
+                        }`}>
                         {hasExistingFile ? 'Cargado' : 'Vacío'}
                       </span>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openReportBuilder(month)}
+                        className="rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/20"
+                      >
+                        📄 {hasExistingFile ? 'Regenerar' : 'Crear PDF'}
+                      </button>
+                      <label className="cursor-pointer rounded-xl border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-center text-xs font-semibold text-blue-300 transition hover:bg-blue-500/20">
+                        ⬆️ Elegir PDF
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          onChange={(e) => handleReportFileSelected(month.key, e.target.files?.[0] || null)}
+                          className="hidden"
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => handleUploadSingleMonth(month.key)}
+                        disabled={isUploadingReport || !(pendingFile instanceof File)}
+                        className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20 disabled:opacity-40"
+                      >
+                        ⬆️ Subir
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => hasExistingFile && handleDownloadExistingReport(existingUrl, month.label)}
+                        disabled={!hasExistingFile}
+                        className="rounded-xl border border-zinc-700 bg-zinc-950/70 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:border-cyan-500 hover:text-cyan-300 disabled:opacity-40"
+                      >
+                        ⬇️ Descargar
+                      </button>
                     </div>
 
                     {hasExistingFile && (
@@ -1061,34 +1248,24 @@ export default function Page() {
                         >
                           🗑 Eliminar
                         </button>
-                        <span className="flex-1 rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300">
-                          ✎ Reemplazar
+                        <span className="flex-1 rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-center text-xs font-semibold text-cyan-300">
+                          PDF actual guardado
                         </span>
                       </div>
                     )}
 
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        setReportFilesByMonth((prev) => ({ ...prev, [month.key]: file }));
-                      }}
-                      className="mt-3 w-full rounded-2xl border border-zinc-800 bg-zinc-950/80 px-3 py-2 text-sm text-white"
-                    />
-
-                    {reportFilesByMonth[month.key] && (
+                    {pendingFile && (
                       <p className="mt-2 truncate text-xs text-cyan-300">
-                        Nuevo: {reportFilesByMonth[month.key].name}
+                        Nuevo: {pendingFile.name}
                       </p>
                     )}
-                  </label>
+                  </div>
                 );
               })}
             </div>
 
             <p className="mt-4 text-xs text-zinc-400">
-              Cada archivo se guarda asociado a su mes. Si subes uno nuevo para el mismo mes, reemplaza el anterior.
+              Cada mes permite crear un PDF con el formato técnico, descargar el actual o subir uno manualmente. Si subes uno nuevo para el mismo mes, reemplaza el anterior.
             </p>
 
             <div className="mt-6 flex gap-3">
@@ -1101,13 +1278,47 @@ export default function Page() {
               >
                 Cancelar
               </button>
-              <button
-                onClick={handleUploadReport}
-                disabled={isUploadingReport}
-                className="flex-1 rounded-3xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
-              >
-                {isUploadingReport ? 'Subiendo...' : 'Subir'}
-              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReportBuilderModal && reportDraft && selectedReportMonth && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 px-4 py-6">
+          <div className="mx-auto max-w-6xl rounded-[2rem] border border-zinc-800 bg-zinc-950/95 p-4 shadow-2xl">
+            <div className="no-print mb-4 flex flex-col gap-3 border-b border-zinc-800 pb-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 className="text-2xl font-semibold text-white">Generar reporte {selectedReportMonth.label}</h3>
+                <p className="text-sm text-zinc-400">Equipo: {selectedEquipmentForReport?.internalCode || 'Sin código'}</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="rounded-3xl border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-200 hover:border-cyan-500 hover:text-cyan-300"
+                >
+                  Imprimir
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateAndUploadReport}
+                  disabled={isGeneratingReport}
+                  className="rounded-3xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
+                >
+                  {isGeneratingReport ? 'Generando...' : 'Generar, subir y descargar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeReportBuilder}
+                  className="rounded-3xl border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-200"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+
+            <div className="print-surface overflow-hidden rounded-[1.5rem] bg-white">
+              <MonthlyMaintenanceReport draft={reportDraft} onChange={setReportDraft} />
             </div>
           </div>
         </div>
