@@ -38,7 +38,7 @@ export default function Navbar() {
       {/* NAVBAR BASE */}
       <nav
         className={`fixed top-0 left-0 w-full z-40 transition-all duration-500 ease-in-out flex items-center justify-between px-6 md:px-8 ${
-          isScrolled ? 'bg-black/80 backdrop-blur-md py-2 shadow-lg shadow-black/20' : 'bg-transparent py-6'
+          isScrolled ? 'bg-black/80 backdrop-blur-md py-2 shadow-lg shadow-black/20' : 'bg-black/40 py-6'
         }`}
       >
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between relative">
@@ -84,7 +84,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={toggleMenu}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-50 p-3 md:hidden rounded-lg bg-white/10 backdrop-blur-md border border-white/10 touch-manipulation active:scale-95 transition-all"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-50 p-3 md:hidden rounded-lg bg-white/10 border border-white/10 touch-manipulation active:scale-95 transition-all"
             aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
             aria-expanded={menuOpen}
           >
