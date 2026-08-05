@@ -114,7 +114,7 @@ export default function ClientDashboardPage() {
     return (
       <div className="min-h-screen bg-zinc-950 text-white">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-          <DashboardNavbar />
+          <DashboardNavbar userName={session?.name} />
           <div className="mt-8 rounded-[2rem] border border-zinc-800 bg-zinc-900/70 p-8 text-center">
             <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">Cargando</p>
             <h1 className="mt-6 text-3xl font-semibold">Cargando tus equipos...</h1>
@@ -127,7 +127,7 @@ export default function ClientDashboardPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.12),_transparent_36%),linear-gradient(180deg,#09090b_0%,#000_100%)] text-white">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <DashboardNavbar />
+        <DashboardNavbar userName={session?.name} />
 
         <div className="mt-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>

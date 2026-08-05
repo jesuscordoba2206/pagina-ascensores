@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-export default function DashboardNavbar({ onLogout }) {
+export default function DashboardNavbar({ onLogout, userName }) {
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -33,6 +33,11 @@ export default function DashboardNavbar({ onLogout }) {
       </div>
 
       <div className="flex items-center gap-3">
+        {userName && (
+          <span className="hidden sm:inline text-sm font-medium text-zinc-300 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2">
+            {userName}
+          </span>
+        )}
         <button
           onClick={handleLogout}
           className="inline-flex items-center gap-2 rounded-2xl border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:text-red-400 hover:border-red-400/40 transition-all duration-300"

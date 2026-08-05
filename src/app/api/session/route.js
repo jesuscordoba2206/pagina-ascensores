@@ -11,7 +11,7 @@ export async function GET(request) {
       });
     }
 
-    return new Response(JSON.stringify({ id: user.id, role: normalizeRole(user?.role), email: user.email }), {
+    return new Response(JSON.stringify({ id: user.id, role: normalizeRole(user?.role), email: user.email, name: user.name || null }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

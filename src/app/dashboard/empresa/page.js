@@ -89,6 +89,7 @@ const emptyPortfolioForm = {
 export default function Page() {
   const router = useRouter();
   const [sessionRole, setSessionRole] = useState(null);
+  const [userName, setUserName] = useState('');
   const [clients, setClients] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -171,6 +172,7 @@ export default function Page() {
       .then((data) => {
         if (data?.role === 'EMPRESA') {
           setSessionRole('EMPRESA');
+          setUserName(data.name || '');
           loadClients();
           loadProjects();
         } else {
@@ -742,7 +744,18 @@ export default function Page() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.12),_transparent_36%),linear-gradient(180deg,#09090b_0%,#000_100%)] text-white">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <DashboardNavbar />
+        <DashboardNavbar userName={userName} />
+
+        <div className="mb-6 flex items-center gap-4 rounded-[2rem] border border-cyan-400/30 bg-gradient-to-r from-cyan-500/10 via-cyan-500/5 to-transparent px-6 py-4 shadow-lg shadow-cyan-500/5">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-500/20 text-xl font-bold text-cyan-300 ring-2 ring-cyan-400/40">
+            {userName ? userName.charAt(0).toUpperCase() : 'G'}
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-400">Gerente</p>
+            <h1 className="text-lg font-bold text-white">{userName || 'Jhon Jairo Hurtado Martinez'}</h1>
+          </div>
+        </div>
+
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
           <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900/50 p-6">
             <div className="flex items-center justify-between gap-3 mb-6">
