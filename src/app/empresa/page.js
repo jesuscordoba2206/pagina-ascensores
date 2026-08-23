@@ -65,7 +65,7 @@ export default async function EmpresaPage() {
               <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900/40 p-10 backdrop-blur-md shadow-xl shadow-cyan-500/10">
                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">Visión</h2>
                 <p className="text-zinc-400 leading-relaxed">
-                  Convertirnos en la empresa líder del transporte vertical en el mercado nacional, reconocidos como una organización sólida, rentable y modelo de otras organizaciones mediante nuestra búsqueda constante de la mejora continua.
+                  Convertirnos en la empresa líder del transporte vertical en el mercado nacional, reconocidos como una organización sólida, rentable y modelo de otras organizaciones mediante nuestra búsqueda constante de la mejora continua,
                 </p>
               </div>
             </div>
