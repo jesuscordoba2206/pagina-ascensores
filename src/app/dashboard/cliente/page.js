@@ -169,17 +169,18 @@ export default function ClientDashboardPage() {
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-cyan-400">Dashboard Cliente</p>
             <h1 className="mt-3 text-4xl font-extrabold leading-tight md:text-6xl">
-              Tus equipos reales en Atlas
+              Bienvenido{session?.building ? ` · ${session.building}` : ''}
             </h1>
             <p className="mt-4 max-w-3xl text-base text-zinc-300 md:text-lg">
-              Esta vista carga únicamente los ascensores asociados a tu sesión actual.
+              {session?.building
+                ? `Aquí puedes consultar la ficha técnica y los reportes de los equipos vinculados a ${session.building}.`
+                : 'Aquí puedes consultar la ficha técnica y los reportes de tus equipos vinculados.'}
             </p>
           </div>
 
           <div className="rounded-3xl border border-zinc-800 bg-zinc-900/70 px-5 py-4">
             <p className="text-xs uppercase tracking-[0.28em] text-zinc-500">Sesión</p>
             <p className="mt-2 text-lg font-semibold text-white">{session?.email || 'cliente'}</p>
-            <p className="mt-1 text-sm text-cyan-300">{session?.id || 'sin id'}</p>
           </div>
         </div>
 
