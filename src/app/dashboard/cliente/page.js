@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Download, FileText } from 'lucide-react';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import FichaTecnicaViewer from '@/components/FichaTecnicaViewer';
+import ReportMonthPicker from '@/components/ReportMonthPicker';
 
 const REPORT_MONTHS = [
   { key: 'enero', label: 'Enero' },
@@ -47,6 +49,7 @@ export default function ClientDashboardPage() {
   const [session, setSession] = useState(null);
   const [equipments, setEquipments] = useState([]);
   const [currentFichaTecnica, setCurrentFichaTecnica] = useState(null);
+  const [activeMonthByEquipment, setActiveMonthByEquipment] = useState({});
 
   useEffect(() => {
     let alive = true;
@@ -190,71 +193,100 @@ export default function ClientDashboardPage() {
                 <FichaTecnicaViewer fichaTecnica={currentFichaTecnica} />
 
                 <div className="space-y-6">
-                  {equipmentsWithReports.map(({ equipment, months, availableMonths }) => (
-                    <div key={equipment.id} className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-5">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Reportes</p>
-                          <h3 className="mt-2 text-lg font-semibold text-white">
-                            {equipment.internalCode || 'Equipo'} · {equipment.type || 'Equipo'}
-                          </h3>
+                  {equipmentsWithReports.map(({ equipment, months, availableMonths }) => {
+                    const activeKey = activeMonthByEquipment[equipment.id]
+                      || months.find((month) => month.files.length > 0 || month.legacyUrl !== '')?.key
+                      || REPORT_MONTHS[new Date().getMonth()].key;
+                    const activeMonth = months.find((month) => month.key === activeKey) || months[0];
+                    const counts = months.reduce((acc, month) => {
+                      acc[month.key] = month.files.length || (month.legacyUrl ? 1 : 0);
+                      return acc;
+                    }, {});
+                    const fileCount = activeMonth.files.length || (activeMonth.legacyUrl ? 1 : 0);
+
+                    return (
+                      <div key={equipment.id} className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-5">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Reportes</p>
+                            <h3 className="mt-2 text-lg font-semibold text-white">
+                              {equipment.internalCode || 'Equipo'} · {equipment.type || 'Equipo'}
+                            </h3>
+                          </div>
+                          <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
+                            {availableMonths}/12
+                          </span>
                         </div>
-                        <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
-                          {availableMonths}/12
-                        </span>
-                      </div>
 
-                      <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-                        {months.map((month) => {
-                          const hasFiles = month.files.length > 0 || month.legacyUrl !== '';
+                        <div className="mt-4">
+                          <ReportMonthPicker
+                            months={REPORT_MONTHS}
+                            activeKey={activeKey}
+                            onSelect={(key) => setActiveMonthByEquipment((prev) => ({ ...prev, [equipment.id]: key }))}
+                            counts={counts}
+                          />
+                        </div>
 
-                          return (
-                            <div
-                              key={`${equipment.id}-${month.key}`}
-                              className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-4"
+                        <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <h4 className="text-sm font-semibold text-white">{activeMonth.label}</h4>
+                            <span
+                              className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                                fileCount > 0
+                                  ? 'border border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+                                  : 'border border-zinc-700 bg-zinc-900 text-zinc-500'
+                              }`}
                             >
-                              <p className="text-sm font-semibold text-white">{month.label}</p>
+                              {fileCount > 0 ? `${fileCount} archivo${fileCount === 1 ? '' : 's'}` : 'Vacío'}
+                            </span>
+                          </div>
 
-                              {hasFiles ? (
-                                <ul className="mt-3 space-y-2">
-                                  {month.files.map((report) => (
-                                    <li key={report.id}>
-                                      <a
-                                        href={`/api/report/download?id=${encodeURIComponent(report.id)}`}
-                                        download={report.fileName || true}
-                                        className="block rounded-xl border border-cyan-300/40 bg-cyan-400/90 px-3 py-2 text-[11px] font-semibold text-zinc-950 transition hover:bg-cyan-300"
-                                        title={report.fileName}
-                                      >
-                                        <span className="block truncate">{report.fileName}</span>
-                                        <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.1em] text-zinc-800">
-                                          {formatReportDate(report.createdAt)}
-                                        </span>
-                                      </a>
-                                    </li>
-                                  ))}
-                                  {month.files.length === 0 && month.legacyUrl !== '' && (
-                                    <li>
-                                      <a
-                                        href={`/api/report/download?url=${encodeURIComponent(month.legacyUrl)}&fileName=${encodeURIComponent(`reporte-${equipment.internalCode || 'equipo'}-${month.key}.pdf`)}`}
-                                        download
-                                        className="block rounded-xl border border-cyan-300/40 bg-cyan-400/90 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-950 transition hover:bg-cyan-300"
-                                      >
-                                        Descargar PDF
-                                      </a>
-                                    </li>
-                                  )}
-                                </ul>
-                              ) : (
-                                <div className="mt-4 rounded-xl border border-zinc-700/80 bg-zinc-900/50 px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                                  No disponible
-                                </div>
+                          {fileCount > 0 ? (
+                            <ul className="mt-4 space-y-2">
+                              {activeMonth.files.map((report) => (
+                                <li key={report.id}>
+                                  <a
+                                    href={`/api/report/download?id=${encodeURIComponent(report.id)}`}
+                                    download={report.fileName || true}
+                                    className="flex items-center gap-3 rounded-2xl border border-zinc-800/70 bg-zinc-950/60 px-3 py-2 transition hover:border-cyan-500/50 hover:text-cyan-300"
+                                    title={report.fileName}
+                                  >
+                                    <FileText className="h-4 w-4 shrink-0 text-zinc-500" />
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block truncate text-xs font-semibold text-zinc-100">{report.fileName}</span>
+                                      <span className="mt-0.5 block text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+                                        {formatReportDate(report.createdAt)}
+                                      </span>
+                                    </span>
+                                    <Download className="h-4 w-4 shrink-0 text-zinc-500" />
+                                  </a>
+                                </li>
+                              ))}
+                              {activeMonth.files.length === 0 && activeMonth.legacyUrl !== '' && (
+                                <li>
+                                  <a
+                                    href={`/api/report/download?url=${encodeURIComponent(activeMonth.legacyUrl)}&fileName=${encodeURIComponent(`reporte-${equipment.internalCode || 'equipo'}-${activeMonth.key}.pdf`)}`}
+                                    download
+                                    className="flex items-center gap-3 rounded-2xl border border-zinc-800/70 bg-zinc-950/60 px-3 py-2 transition hover:border-cyan-500/50 hover:text-cyan-300"
+                                  >
+                                    <FileText className="h-4 w-4 shrink-0 text-zinc-500" />
+                                    <span className="min-w-0 flex-1 truncate text-xs font-semibold text-zinc-100">
+                                      Reporte {activeMonth.label}
+                                    </span>
+                                    <Download className="h-4 w-4 shrink-0 text-zinc-500" />
+                                  </a>
+                                </li>
                               )}
-                            </div>
-                          );
-                        })}
+                            </ul>
+                          ) : (
+                            <p className="mt-4 rounded-2xl border border-dashed border-zinc-800 px-4 py-6 text-center text-xs text-zinc-500">
+                              Sin reportes disponibles para {activeMonth.label}.
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

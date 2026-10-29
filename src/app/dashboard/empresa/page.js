@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Download, FileText, Trash2, Upload, X } from 'lucide-react';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import FichaTecnicaForm from '@/components/FichaTecnicaForm';
 import FichaTecnicaViewer from '@/components/FichaTecnicaViewer';
 import MonthlyMaintenanceReport from '@/components/MonthlyMaintenanceReport';
+import ReportMonthPicker from '@/components/ReportMonthPicker';
 import { createEmptyReportDraft } from '@/lib/reportConfig';
 
 const REPORT_MONTHS = [
@@ -54,6 +56,15 @@ function getMonthlyReportCount(equipment) {
 function getReportsForMonth(equipment, monthKey) {
   const reportFiles = Array.isArray(equipment?.reportFiles) ? equipment.reportFiles : [];
   return reportFiles.filter((report) => report.month === monthKey);
+}
+
+function getDefaultReportMonthKey(equipment) {
+  const reportFiles = Array.isArray(equipment?.reportFiles) ? equipment.reportFiles : [];
+  const monthWithFiles = REPORT_MONTHS.find((month) =>
+    reportFiles.some((report) => report.month === month.key)
+  );
+  if (monthWithFiles) return monthWithFiles.key;
+  return REPORT_MONTHS[new Date().getMonth()]?.key || 'enero';
 }
 
 function formatReportDate(value) {
@@ -134,6 +145,7 @@ export default function Page() {
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedEquipmentForReport, setSelectedEquipmentForReport] = useState(null);
   const [reportFilesByMonth, setReportFilesByMonth] = useState(createEmptyMonthlyReportFiles);
+  const [activeReportMonthKey, setActiveReportMonthKey] = useState('enero');
   const [isUploadingReport, setIsUploadingReport] = useState(false);
   const [showReportBuilderModal, setShowReportBuilderModal] = useState(false);
   const [selectedReportMonth, setSelectedReportMonth] = useState(null);
@@ -165,6 +177,25 @@ export default function Page() {
     if (!selectedEquipmentForReport) return null;
     return selectedEquipments.find((equipment) => equipment.id === selectedEquipmentForReport.id) || selectedEquipmentForReport;
   }, [selectedEquipments, selectedEquipmentForReport]);
+
+  const reportCountsByMonth = useMemo(() => {
+    return REPORT_MONTHS.reduce((acc, month) => {
+      acc[month.key] = getReportsForMonth(activeReportEquipment, month.key).length;
+      return acc;
+    }, {});
+  }, [activeReportEquipment]);
+
+  const activeReportMonth = useMemo(
+    () => REPORT_MONTHS.find((month) => month.key === activeReportMonthKey) || REPORT_MONTHS[0],
+    [activeReportMonthKey]
+  );
+
+  const activeMonthReports = useMemo(
+    () => getReportsForMonth(activeReportEquipment, activeReportMonth.key),
+    [activeReportEquipment, activeReportMonth]
+  );
+
+  const pendingReportFile = reportFilesByMonth[activeReportMonth.key];
 
   const loadClients = useCallback(async () => {
     try {
@@ -323,65 +354,6 @@ export default function Page() {
     }
   }
 
-  async function handleUploadReport() {
-    if (!selectedEquipmentForReport) return;
-
-    const monthsToUpload = REPORT_MONTHS.filter((month) => reportFilesByMonth[month.key] instanceof File);
-    if (monthsToUpload.length === 0) {
-      alert('Selecciona al menos un archivo PDF para subir.');
-      return;
-    }
-
-    setIsUploadingReport(true);
-
-    const readSafeErrorMessage = async (response, fallbackMessage) => {
-      try {
-        const payload = await response.clone().json();
-        return payload?.error || JSON.stringify(payload);
-      } catch {
-        return fallbackMessage;
-      }
-    };
-
-    try {
-      for (const month of monthsToUpload) {
-        const originalFile = reportFilesByMonth[month.key];
-        const pdfFile = originalFile.type === 'application/pdf'
-          ? originalFile
-          : new File([originalFile], originalFile.name, { type: 'application/pdf' });
-
-        const formData = new FormData();
-        formData.append('file', pdfFile, pdfFile.name);
-        formData.append('category', `reports/${selectedClient.id}`);
-        formData.append('equipmentId', selectedEquipmentForReport.id);
-        formData.append('month', month.key);
-        formData.append('year', String(new Date().getFullYear()));
-
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!uploadResponse.ok) {
-          const errorMsg = await readSafeErrorMessage(uploadResponse, `Error HTTP ${uploadResponse.status}`);
-          console.error(`[handleUploadReport] Upload API error (${month.label}):`, errorMsg);
-          alert(`❌ No se pudo subir el PDF de ${month.label}:\n${errorMsg}`);
-          return;
-        }
-      }
-
-      await loadClients();
-      setShowReportModal(false);
-      setReportFilesByMonth(createEmptyMonthlyReportFiles());
-      alert('✅ Reportes PDF mensuales subidos y guardados correctamente en MongoDB Atlas.');
-    } catch (err) {
-      console.error('[handleUploadReport] Unexpected error:', err);
-      alert(`❌ Error subiendo el reporte:\n${err.message}`);
-    } finally {
-      setIsUploadingReport(false);
-    }
-  }
-
   async function uploadMonthlyReportFile(monthKey, file) {
     if (!selectedEquipmentForReport || !selectedClient || !file) return false;
 
@@ -407,6 +379,11 @@ export default function Page() {
 
   function handleReportFileSelected(monthKey, file) {
     setReportFilesByMonth((prev) => ({ ...prev, [monthKey]: file || null }));
+  }
+
+  function closeReportModal() {
+    setShowReportModal(false);
+    setReportFilesByMonth(createEmptyMonthlyReportFiles());
   }
 
   function openReportBuilder(month) {
@@ -480,7 +457,8 @@ export default function Page() {
       const { blob, fileName } = await createPdfFromDraft(reportDraft, selectedReportMonth);
       const file = new File([blob], fileName, { type: 'application/pdf' });
       await uploadMonthlyReportFile(selectedReportMonth.key, file);
-      setReportFilesByMonth((prev) => ({ ...prev, [selectedReportMonth.key]: file }));
+      setReportFilesByMonth((prev) => ({ ...prev, [selectedReportMonth.key]: null }));
+      setActiveReportMonthKey(selectedReportMonth.key);
       downloadBlob(blob, fileName);
       await loadClients();
       closeReportBuilder();
@@ -514,6 +492,7 @@ export default function Page() {
     try {
       await uploadMonthlyReportFile(monthKey, file);
       await loadClients();
+      setReportFilesByMonth((prev) => ({ ...prev, [monthKey]: null }));
       alert('✅ PDF subido correctamente.');
     } catch (err) {
       alert(`❌ Error al subir PDF:\n${err.message}`);
@@ -964,6 +943,7 @@ export default function Page() {
                             onClick={() => {
                               setSelectedEquipmentForReport(equipment);
                               setReportFilesByMonth(createEmptyMonthlyReportFiles());
+                              setActiveReportMonthKey(getDefaultReportMonthKey(equipment));
                               setShowReportModal(true);
                             }}
                             className="rounded-3xl bg-blue-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-blue-400"
@@ -1217,120 +1197,144 @@ export default function Page() {
         </div>
       )}
 
-      {showReportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
-          <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-[2rem] border border-zinc-800 bg-zinc-950/95 p-6">
-            <h3 className="text-2xl font-semibold mb-6">Subir reportes PDF por mes</h3>
+      {showReportModal && selectedEquipmentForReport && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 px-4 py-6 sm:items-center">
+          <div className="relative w-full max-w-2xl rounded-[2rem] border border-zinc-800/80 bg-zinc-950/95 p-6 shadow-2xl backdrop-blur-xl">
+            <button
+              type="button"
+              onClick={closeReportModal}
+              className="absolute top-5 right-5 rounded-full border border-zinc-800 p-2 text-zinc-500 transition hover:border-zinc-700 hover:text-zinc-200"
+              title="Cerrar"
+              aria-label="Cerrar modal de reportes"
+            >
+              <X className="h-4 w-4" />
+            </button>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {REPORT_MONTHS.map((month) => {
-                const monthReports = getReportsForMonth(activeReportEquipment, month.key);
-                const hasExistingFile = monthReports.length > 0;
-                const pendingFile = reportFilesByMonth[month.key];
+            <header className="pr-12">
+              <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-400">Reportes</p>
+              <h3 className="mt-2 text-2xl font-semibold text-white">Reportes PDF</h3>
+              <p className="mt-1 text-sm text-zinc-400">
+                {selectedEquipmentForReport.internalCode || 'Equipo'} · {getMonthlyReportCount(activeReportEquipment)}/12 meses con archivos
+              </p>
+            </header>
 
-                return (
-                  <div
-                    key={month.key}
-                    className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-semibold text-zinc-100">{month.label}</span>
-                      <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
-                        hasExistingFile
-                          ? 'border border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
-                          : 'border border-zinc-700 bg-zinc-900 text-zinc-500'
-                        }`}>
-                        {hasExistingFile ? `${monthReports.length} archivo${monthReports.length === 1 ? '' : 's'}` : 'Vacío'}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openReportBuilder(month)}
-                        className="rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/20"
-                      >
-                        📄 Crear PDF
-                      </button>
-                      <label className="cursor-pointer rounded-xl border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-center text-xs font-semibold text-blue-300 transition hover:bg-blue-500/20">
-                        ⬆️ Elegir PDF
-                        <input
-                          type="file"
-                          accept="application/pdf"
-                          onChange={(e) => handleReportFileSelected(month.key, e.target.files?.[0] || null)}
-                          className="hidden"
-                        />
-                      </label>
-
-                      <button
-                        type="button"
-                        onClick={() => handleUploadSingleMonth(month.key)}
-                        disabled={isUploadingReport || !(pendingFile instanceof File)}
-                        className="col-span-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20 disabled:opacity-40"
-                      >
-                        ⬆️ Subir archivo a {month.label}
-                      </button>
-                    </div>
-
-                    {pendingFile && (
-                      <p className="mt-2 truncate text-xs text-cyan-300">
-                        Nuevo: {pendingFile.name}
-                      </p>
-                    )}
-
-                    {hasExistingFile && (
-                      <ul className="mt-3 space-y-2">
-                        {monthReports.map((report) => (
-                          <li
-                            key={report.id}
-                            className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-2"
-                          >
-                            <p className="truncate text-xs font-semibold text-zinc-100" title={report.fileName}>
-                              {report.fileName}
-                            </p>
-                            <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-zinc-500">
-                              {formatReportDate(report.createdAt)}
-                              {report.year ? ` · ${report.year}` : ''}
-                            </p>
-                            <div className="mt-2 flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleDownloadReport(report)}
-                                className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] font-semibold text-zinc-200 transition hover:border-cyan-500 hover:text-cyan-300"
-                              >
-                                ⬇️ Descargar
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteReport(report)}
-                                className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-2 py-1 text-[11px] font-semibold text-rose-300 transition hover:bg-rose-500/25"
-                                title="Eliminar reporte"
-                              >
-                                🗑
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
+            <div className="mt-6">
+              <ReportMonthPicker
+                months={REPORT_MONTHS}
+                activeKey={activeReportMonthKey}
+                onSelect={setActiveReportMonthKey}
+                counts={reportCountsByMonth}
+              />
             </div>
 
-            <p className="mt-4 text-xs text-zinc-400">
-              Puedes subir varios PDF para el mismo mes y equipo. Cada archivo se guarda de forma independiente y se puede descargar o eliminar sin afectar a los demás.
-            </p>
+            <div className="mt-6 rounded-[1.5rem] border border-zinc-800/80 bg-zinc-900/30 p-5">
+              <div className="flex items-center justify-between gap-3">
+                <h4 className="text-lg font-semibold text-white">{activeReportMonth.label}</h4>
+                <span
+                  className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                    activeMonthReports.length > 0
+                      ? 'border border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+                      : 'border border-zinc-700 bg-zinc-900 text-zinc-500'
+                  }`}
+                >
+                  {activeMonthReports.length > 0
+                    ? `${activeMonthReports.length} archivo${activeMonthReports.length === 1 ? '' : 's'}`
+                    : 'Vacío'}
+                </span>
+              </div>
 
-            <div className="mt-6 flex gap-3">
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => openReportBuilder(activeReportMonth)}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/20"
+                >
+                  <FileText className="h-4 w-4" />
+                  Crear PDF
+                </button>
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-950/60 px-4 py-2 text-xs font-semibold text-zinc-300 transition hover:border-zinc-600 hover:text-white">
+                  <Upload className="h-4 w-4" />
+                  Elegir PDF
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => handleReportFileSelected(activeReportMonth.key, e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                </label>
+                {pendingReportFile && (
+                  <button
+                    type="button"
+                    onClick={() => handleUploadSingleMonth(activeReportMonth.key)}
+                    disabled={isUploadingReport}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-cyan-500 px-4 py-2 text-xs font-semibold text-zinc-950 transition hover:bg-cyan-400 disabled:opacity-50"
+                  >
+                    <Upload className="h-4 w-4" />
+                    {isUploadingReport ? 'Subiendo...' : 'Subir PDF'}
+                  </button>
+                )}
+              </div>
+
+              {pendingReportFile && (
+                <p className="mt-2 truncate text-xs text-zinc-400">
+                  Pendiente: <span className="text-cyan-300">{pendingReportFile.name}</span>
+                </p>
+              )}
+
+              <div className="mt-5">
+                {activeMonthReports.length === 0 ? (
+                  <p className="rounded-2xl border border-dashed border-zinc-800 px-4 py-6 text-center text-xs text-zinc-500">
+                    Sin archivos para {activeReportMonth.label}.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {activeMonthReports.map((report) => (
+                      <li
+                        key={report.id}
+                        className="flex items-center gap-3 rounded-2xl border border-zinc-800/70 bg-zinc-950/60 px-3 py-2"
+                      >
+                        <FileText className="h-4 w-4 shrink-0 text-zinc-500" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-zinc-100" title={report.fileName}>
+                            {report.fileName}
+                          </p>
+                          <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+                            {formatReportDate(report.createdAt)}
+                            {report.year ? ` · ${report.year}` : ''}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadReport(report)}
+                          className="rounded-xl border border-zinc-800 p-2 text-zinc-400 transition hover:border-cyan-500/50 hover:text-cyan-300"
+                          title="Descargar"
+                          aria-label={`Descargar ${report.fileName}`}
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReport(report)}
+                          className="rounded-xl border border-zinc-800 p-2 text-zinc-400 transition hover:border-rose-500/50 hover:text-rose-300"
+                          title="Eliminar"
+                          aria-label={`Eliminar ${report.fileName}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
               <button
-                onClick={() => {
-                  setShowReportModal(false);
-                  setReportFilesByMonth(createEmptyMonthlyReportFiles());
-                }}
-                className="flex-1 rounded-3xl border border-zinc-700 px-4 py-2 text-sm font-semibold"
+                type="button"
+                onClick={closeReportModal}
+                className="rounded-2xl border border-zinc-700 px-5 py-2 text-sm font-semibold text-zinc-300 hover:border-zinc-600 hover:text-white"
               >
-                Cancelar
+                Listo
               </button>
             </div>
           </div>
