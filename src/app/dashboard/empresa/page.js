@@ -31,12 +31,38 @@ function createEmptyMonthlyReportFiles() {
   }, {});
 }
 
-function getMonthlyReportCount(reportUrls) {
+const REPORT_MONTH_KEYS = new Set(REPORT_MONTHS.map((month) => month.key));
+
+function getMonthlyReportCount(equipment) {
+  const reportFiles = Array.isArray(equipment?.reportFiles) ? equipment.reportFiles : [];
+  if (reportFiles.length > 0) {
+    return new Set(
+      reportFiles
+        .filter((report) => REPORT_MONTH_KEYS.has(report.month))
+        .map((report) => report.month)
+    ).size;
+  }
+
+  const reportUrls = equipment?.reportUrls;
   if (!Array.isArray(reportUrls)) return 0;
   return REPORT_MONTHS.reduce((count, _, index) => {
     const url = reportUrls[index];
     return typeof url === 'string' && url.trim() !== '' ? count + 1 : count;
   }, 0);
+}
+
+function getReportsForMonth(equipment, monthKey) {
+  const reportFiles = Array.isArray(equipment?.reportFiles) ? equipment.reportFiles : [];
+  return reportFiles.filter((report) => report.month === monthKey);
+}
+
+function formatReportDate(value) {
+  if (!value) return '';
+  try {
+    return new Date(value).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: '2-digit' });
+  } catch {
+    return '';
+  }
 }
 
 function InputField({ label, value, onChange, placeholder = '', type = 'text', required = false }) {
@@ -134,6 +160,11 @@ export default function Page() {
       return [client.name, client.email, client.building].filter(Boolean).some((value) => value.toLowerCase().includes(query));
     });
   }, [clients, search]);
+
+  const activeReportEquipment = useMemo(() => {
+    if (!selectedEquipmentForReport) return null;
+    return selectedEquipments.find((equipment) => equipment.id === selectedEquipmentForReport.id) || selectedEquipmentForReport;
+  }, [selectedEquipments, selectedEquipmentForReport]);
 
   const loadClients = useCallback(async () => {
     try {
@@ -324,6 +355,7 @@ export default function Page() {
         formData.append('category', `reports/${selectedClient.id}`);
         formData.append('equipmentId', selectedEquipmentForReport.id);
         formData.append('month', month.key);
+        formData.append('year', String(new Date().getFullYear()));
 
         const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
@@ -358,6 +390,7 @@ export default function Page() {
     formData.append('category', `reports/${selectedClient.id}`);
     formData.append('equipmentId', selectedEquipmentForReport.id);
     formData.append('month', monthKey);
+    formData.append('year', String(new Date().getFullYear()));
 
     const uploadResponse = await fetch('/api/upload', {
       method: 'POST',
@@ -459,19 +492,15 @@ export default function Page() {
     }
   }
 
-  async function handleDownloadExistingReport(url, monthLabel) {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`No se pudo descargar el PDF (${response.status})`);
-      }
-      const blob = await response.blob();
-      const safeClientName = (selectedClient?.name || 'cliente').replace(/\s+/g, '-').toLowerCase();
-      const safeCode = (selectedEquipmentForReport?.internalCode || 'equipo').replace(/\s+/g, '-').toLowerCase();
-      downloadBlob(blob, `reporte-${safeClientName}-${safeCode}-${monthLabel.toLowerCase()}.pdf`);
-    } catch (err) {
-      alert(`❌ Error descargando reporte:\n${err.message}`);
-    }
+  function handleDownloadReport(reportFile) {
+    if (!reportFile?.id) return;
+
+    const link = document.createElement('a');
+    link.href = `/api/report/download?id=${encodeURIComponent(reportFile.id)}`;
+    link.download = reportFile.fileName || 'reporte.pdf';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   }
 
   async function handleUploadSingleMonth(monthKey) {
@@ -571,10 +600,11 @@ export default function Page() {
     }
   }
 
-  async function handleDeleteReport(equipmentId, monthKey) {
+  async function handleDeleteReport(reportFile) {
+    if (!reportFile?.id) return;
     if (!window.confirm('¿Eliminar este reporte PDF?\nEsta acción no se puede deshacer.')) return;
     try {
-      const res = await fetch(`/api/report?equipmentId=${equipmentId}&month=${monthKey}`, { method: 'DELETE' });
+      const res = await fetch(`/api/report?id=${encodeURIComponent(reportFile.id)}`, { method: 'DELETE' });
       if (res.ok) {
         await loadClients();
         alert('✅ Reporte eliminado correctamente.');
@@ -938,7 +968,7 @@ export default function Page() {
                             }}
                             className="rounded-3xl bg-blue-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-blue-400"
                           >
-                            Reportes ({getMonthlyReportCount(equipment.reportUrls)}/12)
+                            Reportes ({getMonthlyReportCount(equipment)}/12)
                           </button>
                         </div>
 
@@ -1193,9 +1223,9 @@ export default function Page() {
             <h3 className="text-2xl font-semibold mb-6">Subir reportes PDF por mes</h3>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {REPORT_MONTHS.map((month, index) => {
-                const existingUrl = selectedEquipmentForReport?.reportUrls?.[index];
-                const hasExistingFile = typeof existingUrl === 'string' && existingUrl.trim() !== '';
+              {REPORT_MONTHS.map((month) => {
+                const monthReports = getReportsForMonth(activeReportEquipment, month.key);
+                const hasExistingFile = monthReports.length > 0;
                 const pendingFile = reportFilesByMonth[month.key];
 
                 return (
@@ -1210,7 +1240,7 @@ export default function Page() {
                           ? 'border border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
                           : 'border border-zinc-700 bg-zinc-900 text-zinc-500'
                         }`}>
-                        {hasExistingFile ? 'Cargado' : 'Vacío'}
+                        {hasExistingFile ? `${monthReports.length} archivo${monthReports.length === 1 ? '' : 's'}` : 'Vacío'}
                       </span>
                     </div>
 
@@ -1220,7 +1250,7 @@ export default function Page() {
                         onClick={() => openReportBuilder(month)}
                         className="rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/20"
                       >
-                        📄 {hasExistingFile ? 'Regenerar' : 'Crear PDF'}
+                        📄 Crear PDF
                       </button>
                       <label className="cursor-pointer rounded-xl border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-center text-xs font-semibold text-blue-300 transition hover:bg-blue-500/20">
                         ⬆️ Elegir PDF
@@ -1236,41 +1266,52 @@ export default function Page() {
                         type="button"
                         onClick={() => handleUploadSingleMonth(month.key)}
                         disabled={isUploadingReport || !(pendingFile instanceof File)}
-                        className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20 disabled:opacity-40"
+                        className="col-span-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20 disabled:opacity-40"
                       >
-                        ⬆️ Subir
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => hasExistingFile && handleDownloadExistingReport(existingUrl, month.label)}
-                        disabled={!hasExistingFile}
-                        className="rounded-xl border border-zinc-700 bg-zinc-950/70 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:border-cyan-500 hover:text-cyan-300 disabled:opacity-40"
-                      >
-                        ⬇️ Descargar
+                        ⬆️ Subir archivo a {month.label}
                       </button>
                     </div>
-
-                    {hasExistingFile && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteReport(selectedEquipmentForReport.id, month.key)}
-                          className="flex-1 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/25"
-                          title="Eliminar reporte"
-                        >
-                          🗑 Eliminar
-                        </button>
-                        <span className="flex-1 rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-center text-xs font-semibold text-cyan-300">
-                          PDF actual guardado
-                        </span>
-                      </div>
-                    )}
 
                     {pendingFile && (
                       <p className="mt-2 truncate text-xs text-cyan-300">
                         Nuevo: {pendingFile.name}
                       </p>
+                    )}
+
+                    {hasExistingFile && (
+                      <ul className="mt-3 space-y-2">
+                        {monthReports.map((report) => (
+                          <li
+                            key={report.id}
+                            className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-2"
+                          >
+                            <p className="truncate text-xs font-semibold text-zinc-100" title={report.fileName}>
+                              {report.fileName}
+                            </p>
+                            <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+                              {formatReportDate(report.createdAt)}
+                              {report.year ? ` · ${report.year}` : ''}
+                            </p>
+                            <div className="mt-2 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadReport(report)}
+                                className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] font-semibold text-zinc-200 transition hover:border-cyan-500 hover:text-cyan-300"
+                              >
+                                ⬇️ Descargar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteReport(report)}
+                                className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-2 py-1 text-[11px] font-semibold text-rose-300 transition hover:bg-rose-500/25"
+                                title="Eliminar reporte"
+                              >
+                                🗑
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
                     )}
                   </div>
                 );
@@ -1278,7 +1319,7 @@ export default function Page() {
             </div>
 
             <p className="mt-4 text-xs text-zinc-400">
-              Cada mes permite crear un PDF con el formato técnico, descargar el actual o subir uno manualmente. Si subes uno nuevo para el mismo mes, reemplaza el anterior.
+              Puedes subir varios PDF para el mismo mes y equipo. Cada archivo se guarda de forma independiente y se puede descargar o eliminar sin afectar a los demás.
             </p>
 
             <div className="mt-6 flex gap-3">

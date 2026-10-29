@@ -20,6 +20,15 @@ const REPORT_MONTHS = [
   { key: 'diciembre', label: 'Diciembre' },
 ];
 
+function formatReportDate(value) {
+  if (!value) return '';
+  try {
+    return new Date(value).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: '2-digit' });
+  } catch {
+    return '';
+  }
+}
+
 function Card({ label, value, unit }) {
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
@@ -90,25 +99,23 @@ export default function ClientDashboardPage() {
   }, [router]);
 
   const activeEquipment = useMemo(() => equipments[0] || null, [equipments]);
-  const activeMonthlyReports = useMemo(() => {
-    const reportUrls = Array.isArray(activeEquipment?.reportUrls) ? activeEquipment.reportUrls : [];
+  const equipmentsWithReports = useMemo(() => {
+    return equipments.map((equipment) => {
+      const reportFiles = Array.isArray(equipment?.reportFiles) ? equipment.reportFiles : [];
+      const reportUrls = Array.isArray(equipment?.reportUrls) ? equipment.reportUrls : [];
 
-    return REPORT_MONTHS.map((month, index) => {
-      const url = reportUrls[index];
-      const normalizedUrl = typeof url === 'string' ? url.trim() : '';
+      const months = REPORT_MONTHS.map((month, index) => {
+        const files = reportFiles.filter((report) => report.month === month.key);
+        const legacyUrl = typeof reportUrls[index] === 'string' ? reportUrls[index].trim() : '';
 
-      return {
-        ...month,
-        url: normalizedUrl,
-        isAvailable: normalizedUrl !== '',
-      };
+        return { ...month, files, legacyUrl };
+      });
+
+      const availableMonths = months.filter((month) => month.files.length > 0 || month.legacyUrl !== '').length;
+
+      return { equipment, months, availableMonths };
     });
-  }, [activeEquipment]);
-
-  const availableMonthlyReports = useMemo(
-    () => activeMonthlyReports.filter((report) => report.isAvailable).length,
-    [activeMonthlyReports]
-  );
+  }, [equipments]);
 
   if (loading) {
     return (
@@ -182,41 +189,72 @@ export default function ClientDashboardPage() {
               <div className="mt-8 space-y-8">
                 <FichaTecnicaViewer fichaTecnica={currentFichaTecnica} />
 
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Reportes</p>
-                      <h3 className="mt-2 text-lg font-semibold text-white">PDF disponibles</h3>
-                    </div>
-                    <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
-                      {availableMonthlyReports}/12
-                    </span>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {activeMonthlyReports.map((report) => (
-                      <div
-                        key={report.key}
-                        className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-4"
-                      >
-                        <p className="text-sm font-semibold text-white">{report.label}</p>
-
-                        {report.isAvailable ? (
-                          <a
-                            href={report.url}
-                            download
-                            className="mt-4 inline-flex w-full items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/90 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-950 transition hover:bg-cyan-300"
-                          >
-                            Descargar PDF
-                          </a>
-                        ) : (
-                          <div className="mt-4 rounded-xl border border-zinc-700/80 bg-zinc-900/50 px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                            No disponible
-                          </div>
-                        )}
+                <div className="space-y-6">
+                  {equipmentsWithReports.map(({ equipment, months, availableMonths }) => (
+                    <div key={equipment.id} className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Reportes</p>
+                          <h3 className="mt-2 text-lg font-semibold text-white">
+                            {equipment.internalCode || 'Equipo'} · {equipment.type || 'Equipo'}
+                          </h3>
+                        </div>
+                        <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
+                          {availableMonths}/12
+                        </span>
                       </div>
-                    ))}
-                  </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                        {months.map((month) => {
+                          const hasFiles = month.files.length > 0 || month.legacyUrl !== '';
+
+                          return (
+                            <div
+                              key={`${equipment.id}-${month.key}`}
+                              className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-4"
+                            >
+                              <p className="text-sm font-semibold text-white">{month.label}</p>
+
+                              {hasFiles ? (
+                                <ul className="mt-3 space-y-2">
+                                  {month.files.map((report) => (
+                                    <li key={report.id}>
+                                      <a
+                                        href={`/api/report/download?id=${encodeURIComponent(report.id)}`}
+                                        download={report.fileName || true}
+                                        className="block rounded-xl border border-cyan-300/40 bg-cyan-400/90 px-3 py-2 text-[11px] font-semibold text-zinc-950 transition hover:bg-cyan-300"
+                                        title={report.fileName}
+                                      >
+                                        <span className="block truncate">{report.fileName}</span>
+                                        <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.1em] text-zinc-800">
+                                          {formatReportDate(report.createdAt)}
+                                        </span>
+                                      </a>
+                                    </li>
+                                  ))}
+                                  {month.files.length === 0 && month.legacyUrl !== '' && (
+                                    <li>
+                                      <a
+                                        href={`/api/report/download?url=${encodeURIComponent(month.legacyUrl)}&fileName=${encodeURIComponent(`reporte-${equipment.internalCode || 'equipo'}-${month.key}.pdf`)}`}
+                                        download
+                                        className="block rounded-xl border border-cyan-300/40 bg-cyan-400/90 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-950 transition hover:bg-cyan-300"
+                                      >
+                                        Descargar PDF
+                                      </a>
+                                    </li>
+                                  )}
+                                </ul>
+                              ) : (
+                                <div className="mt-4 rounded-xl border border-zinc-700/80 bg-zinc-900/50 px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">
+                                  No disponible
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

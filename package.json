@@ -10,6 +10,7 @@
     "seed": "node prisma/seed.js",
     "trim:users": "node --env-file=.env --env-file=.env.local prisma/trim-users.js",
     "reset:reports": "node --env-file=.env --env-file=.env.local prisma/reset-report-urls.js",
+    "migrate:reports": "node --env-file=.env --env-file=.env.local prisma/migrate-report-files.js",
     "cleanup:r2:reports": "node --env-file=.env --env-file=.env.local prisma/cleanup-r2-reports.js"
   },
   "dependencies": {

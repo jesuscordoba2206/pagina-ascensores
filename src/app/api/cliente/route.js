@@ -12,14 +12,14 @@ export async function GET(request) {
     if (id) {
       const user = await prisma.user.findUnique({
         where: { id },
-        include: { equipments: { orderBy: { createdAt: 'desc' } } },
+        include: { equipments: { include: { reportFiles: true }, orderBy: { createdAt: 'desc' } } },
       });
       return new Response(JSON.stringify(toPublicUser(user)), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     const clients = await prisma.user.findMany({
       where: { role: 'CLIENTE' },
-      include: { equipments: true },
+      include: { equipments: { include: { reportFiles: true } } },
       orderBy: { createdAt: 'desc' },
     });
     return new Response(JSON.stringify(clients.map(toPublicUser)), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -46,7 +46,7 @@ export async function PUT(request) {
         email: typeof email === 'string' ? normalizeEmail(email) : undefined,
         building: typeof building === 'string' ? normalizeOptionalText(building) : undefined,
       },
-      include: { equipments: true },
+      include: { equipments: { include: { reportFiles: true } } },
     });
     return new Response(JSON.stringify(toPublicUser(updated)), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {

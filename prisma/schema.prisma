@@ -11,24 +11,24 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  email      String   @unique
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  email      String      @unique
   password   String
-  role       String   @default("CLIENTE")
+  role       String      @default("CLIENTE")
   name       String?
   building   String?
-  createdAt  DateTime? @default(now())
-  updatedAt  DateTime? @updatedAt
+  createdAt  DateTime?   @default(now())
+  updatedAt  DateTime?   @updatedAt
   equipments Equipment[]
 
   @@map("User")
 }
 
 model Equipment {
-  id           String          @id @default(auto()) @map("_id") @db.ObjectId
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       String          @db.ObjectId
-  internalCode String          @unique
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String        @db.ObjectId
+  internalCode String        @unique
   type         String
   motorBrand   String?
   controlBrand String?
@@ -36,80 +36,97 @@ model Equipment {
   cableGauge   String?
   maxWeight    Int?
   capacity     Int?
-  reportUrls   String[]        @default([])
+  reportUrls   String[]      @default([])
+  reportFiles  ReportFile[]
   fichaTecnica FichaTecnica?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   @@map("Equipment")
 }
 
+model ReportFile {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  equipmentId String    @db.ObjectId
+  month       String
+  year        Int?
+  fileName    String
+  key         String
+  url         String
+  size        Int?
+  createdAt   DateTime  @default(now())
+
+  @@index([equipmentId, month])
+  @@map("ReportFile")
+}
+
 model FichaTecnica {
-  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
-  equipment                 Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  equipmentId               String    @unique @db.ObjectId
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  equipmentId String    @unique @db.ObjectId
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Información General
   // ─────────────────────────────────────────────────────────────────────────────
-  codigoEquipo              String?
-  marcaOriginal             String?
-  modelo                    String?
-  anoInstalacion            Int?
-  paisOrigen                String?
-  numParadas                Int?
+  codigoEquipo   String?
+  marcaOriginal  String?
+  modelo         String?
+  anoInstalacion Int?
+  paisOrigen     String?
+  numParadas     Int?
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Sistema de Fuerza / Motor
   // ─────────────────────────────────────────────────────────────────────────────
-  tipoTraccion              String?   // "Con cuarto de máquinas", "MRL", etc.
-  marcaMotor                String?
-  potenciaKW                Float?
-  voltajeAlimentacion       String?   // "380/220V 3F", etc.
-  marcaControlElectrico     String?
-  tipoTecnologia            String?   // "VVVF", "Dos velocidades", etc.
+  tipoTraccion          String? // "Con cuarto de máquinas", "MRL", etc.
+  marcaMotor            String?
+  potenciaKW            Float?
+  voltajeAlimentacion   String? // "380/220V 3F", etc.
+  marcaControlElectrico String?
+  tipoTecnologia        String? // "VVVF", "Dos velocidades", etc.
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Cables y Suspensión
   // ─────────────────────────────────────────────────────────────────────────────
-  numCablesTraccion         Int?
-  diametroCable             Float?    // en mm
-  longitudAproximada        Float?    // en metros
+  numCablesTraccion  Int?
+  diametroCable      Float? // en mm
+  longitudAproximada Float? // en metros
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Cabina y Capacidades
   // ─────────────────────────────────────────────────────────────────────────────
-  capacidadKilos            Int?
-  capacidadPersonas         Int?
-  anchoCabina               Float?    // en mm
-  altoCabina                Float?    // en mm
-  profundidadCabina         Float?    // en mm
-  acabadoCabina             String?   // "Acero Inoxidable 304", etc.
-  tipoPiso                  String?
-  tipoBotoneraCOP           String?   // "LED RGB", "Braille", etc.
+  capacidadKilos    Int?
+  capacidadPersonas Int?
+  anchoCabina       Float? // en mm
+  altoCabina        Float? // en mm
+  profundidadCabina Float? // en mm
+  acabadoCabina     String? // "Acero Inoxidable 304", etc.
+  tipoPiso          String?
+  tipoBotoneraCOP   String? // "LED RGB", "Braille", etc.
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Accesos y Puertas
   // ─────────────────────────────────────────────────────────────────────────────
-  tipoAperturaPuerta        String?   // "Central", "Telescópica", etc.
-  anchoPasoPuerta           Int?      // en mm
-  marcaOperador             String?
-  sistemaSeguridadPuerta    String?   // "Cortina Infrarroja", etc.
+  tipoAperturaPuerta     String? // "Central", "Telescópica", etc.
+  anchoPasoPuerta        Int? // en mm
+  marcaOperador          String?
+  sistemaSeguridadPuerta String? // "Cortina Infrarroja", etc.
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Componentes Críticos de Seguridad
   // ─────────────────────────────────────────────────────────────────────────────
-  marcaLimitador            String?
-  velocidadDisparo          Float?    // en m/s
-  tipoParacaidas            String?
-  tipoAmortiguadores        String?
-  tipoPesacargas            String?
+  marcaLimitador     String?
+  velocidadDisparo   Float? // en m/s
+  tipoParacaidas     String?
+  tipoAmortiguadores String?
+  tipoPesacargas     String?
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Auditoría
   // ─────────────────────────────────────────────────────────────────────────────
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("FichaTecnica")
 }

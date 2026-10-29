@@ -33,7 +33,8 @@ ICONS: lucide-react.
 
 ## DATA_MODEL (MongoDB)
 User: { id, email: Unique, password: Hashed, role: Enum[CLIENTE, EMPRESA], name, building, equipment: Rel[] }
-Equipment: { id, userId: FK, internalCode: Unique, type, motorBrand, controlBrand, cableType, cableGauge, maxWeight, capacity, reportUrls: String[] /* 12 max/monthly */, FichaTecnica: Rel 1:1 }
+Equipment: { id, userId: FK, internalCode: Unique, type, motorBrand, controlBrand, cableType, cableGauge, maxWeight, capacity, reportUrls: String[] /* legacy 12 slots */, reportFiles: ReportFile[], FichaTecnica: Rel 1:1 }
+ReportFile: { id, equipmentId: FK, month, year?, fileName, key, url, size?, createdAt } /* multiple PDFs per month/equipment */
 FichaTecnica: { equipmentId: Unique, Specs[motor, cables, cabin, doors, safety], timestamps }
 Project: { id, title, description, imageUrl }
 
@@ -45,7 +46,8 @@ Project: { id, title, description, imageUrl }
 /equipment: [GET, POST, PUT, DELETE]
 /ficha-tecnica: [GET, POST, PUT]
 /cliente: [GET, PUT, DELETE, POST]
-/report: [GET, POST]
+/report: [GET, POST, DELETE]
+/report/download: [GET] (Proxy autenticado R2 -> PDF con Content-Disposition)
 /report/generate: [POST] (pdfkit -> R2)
 /upload: [POST]
 /storage: [POST]
@@ -60,4 +62,5 @@ lint: npm run lint
 seed: node prisma/seed.js
 trim_users: npm run trim:users (Req: .env + .env.local via --env-file)
 reset_reports: npm run reset:reports
+migrate_reports: npm run migrate:reports (reportUrls legacy -> ReportFile)
 cleanup_r2: npm run cleanup:r2:reports

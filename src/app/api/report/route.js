@@ -2,21 +2,13 @@ import { prisma } from '@/lib/prisma';
 import { requireEnterpriseRole } from '@/lib/auth';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getR2Client } from '@/lib/r2';
-
-const MONTH_KEYS = [
-  'enero',
-  'febrero',
-  'marzo',
-  'abril',
-  'mayo',
-  'junio',
-  'julio',
-  'agosto',
-  'septiembre',
-  'octubre',
-  'noviembre',
-  'diciembre',
-];
+import {
+  extractR2KeyFromUrl,
+  getFileNameFromKey,
+  getMonthIndex,
+  normalizeMonthKey,
+  sortReportFiles,
+} from '@/lib/reports';
 
 function getR2ClientOrNull() {
   try {
@@ -26,38 +18,20 @@ function getR2ClientOrNull() {
   }
 }
 
-function extractR2KeyFromUrl(url) {
-  if (!url || typeof url !== 'string') return null;
+async function deleteR2Objects(keys) {
+  const validKeys = keys.filter(Boolean);
+  if (validKeys.length === 0) return;
 
-  try {
-    const base = process.env.R2_PUBLIC_URL;
-    if (base) {
-      const prefix = base.replace(/\/$/, '') + '/';
-      if (url.startsWith(prefix)) {
-        return decodeURIComponent(url.slice(prefix.length));
-      }
-    }
+  const r2 = getR2ClientOrNull();
+  if (!r2) return;
 
-    const parsed = new URL(url);
-    const bucket = process.env.R2_BUCKET_NAME || '';
-    const bucketPrefix = `/${bucket}/`;
-    if (parsed.pathname.startsWith(bucketPrefix)) {
-      return decodeURIComponent(parsed.pathname.slice(bucketPrefix.length));
+  for (const key of validKeys) {
+    try {
+      await r2.send(new DeleteObjectCommand({ Bucket: process.env.R2_BUCKET_NAME, Key: key }));
+    } catch (deleteErr) {
+      console.error('No se pudo borrar el reporte de R2:', deleteErr);
     }
-  } catch {
-    return null;
   }
-
-  return null;
-}
-
-function normalizeMonthKey(value) {
-  if (!value || typeof value !== 'string') return null;
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
 }
 
 export async function GET(request) {
@@ -72,12 +46,18 @@ export async function GET(request) {
       return new Response(JSON.stringify({ error: 'Missing equipmentId' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const equipment = await prisma.equipment.findUnique({ where: { id: equipmentId } });
+    const equipment = await prisma.equipment.findUnique({
+      where: { id: equipmentId },
+      select: { reportUrls: true, reportFiles: true },
+    });
     if (!equipment) {
       return new Response(JSON.stringify({ error: 'Equipment not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
-    return new Response(JSON.stringify(equipment.reportUrls || []), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({
+      reportUrls: equipment.reportUrls || [],
+      reportFiles: sortReportFiles(equipment.reportFiles),
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
@@ -96,29 +76,40 @@ export async function POST(request) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const monthIndex = MONTH_KEYS.indexOf(monthKey);
-    if (monthIndex === -1) {
+    if (getMonthIndex(monthKey) === -1) {
       return new Response(JSON.stringify({ error: 'Invalid month value' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const equipment = await prisma.equipment.findUnique({ where: { id: equipmentId } });
+    const equipment = await prisma.equipment.findUnique({
+      where: { id: equipmentId },
+      select: { id: true },
+    });
     if (!equipment) {
       return new Response(JSON.stringify({ error: 'Equipment not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const existing = Array.isArray(equipment.reportUrls) ? equipment.reportUrls : [];
-    const reportUrls = Array.from({ length: 12 }, (_, index) => {
-      const value = existing[index];
-      return typeof value === 'string' ? value : '';
-    });
-    reportUrls[monthIndex] = reportUrl;
+    const key = body.key || extractR2KeyFromUrl(reportUrl);
+    if (!key) {
+      return new Response(JSON.stringify({ error: 'Could not resolve the R2 key from reportUrl' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
 
-    const updated = await prisma.equipment.update({
-      where: { id: equipmentId },
-      data: { reportUrls },
+    const rawYear = body.year;
+    const parsedYear = rawYear ? Number(rawYear) : null;
+    const year = Number.isInteger(parsedYear) ? parsedYear : new Date().getFullYear();
+
+    const created = await prisma.reportFile.create({
+      data: {
+        equipmentId: equipment.id,
+        month: monthKey,
+        year,
+        fileName: body.fileName || getFileNameFromKey(key),
+        key,
+        url: reportUrl,
+        size: Number.isFinite(Number(body.size)) ? Number(body.size) : null,
+      },
     });
 
-    return new Response(JSON.stringify({ reportUrls: updated.reportUrls }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ file: created }), { status: 201, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
@@ -130,53 +121,64 @@ export async function DELETE(request) {
 
   try {
     const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
     const equipmentId = searchParams.get('equipmentId');
     const monthKey = normalizeMonthKey(searchParams.get('month'));
+    const key = searchParams.get('key');
 
-    if (!equipmentId || !monthKey) {
-      return new Response(JSON.stringify({ error: 'Missing equipmentId or month' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    if (id) {
+      const reportFile = await prisma.reportFile.findUnique({ where: { id } });
+      if (!reportFile) {
+        return new Response(JSON.stringify({ error: 'Report file not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      await prisma.reportFile.delete({ where: { id } });
+      await deleteR2Objects([reportFile.key]);
+
+      return new Response(JSON.stringify({ deleted: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const monthIndex = MONTH_KEYS.indexOf(monthKey);
-    if (monthIndex === -1) {
-      return new Response(JSON.stringify({ error: 'Invalid month value' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    if (!equipmentId) {
+      return new Response(JSON.stringify({ error: 'Missing report id or equipmentId' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const equipment = await prisma.equipment.findUnique({ where: { id: equipmentId }, select: { reportUrls: true } });
+    const equipment = await prisma.equipment.findUnique({
+      where: { id: equipmentId },
+      select: { reportUrls: true, reportFiles: true },
+    });
     if (!equipment) {
       return new Response(JSON.stringify({ error: 'Equipment not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const existing = Array.isArray(equipment.reportUrls) ? equipment.reportUrls : [];
-    const reportUrls = Array.from({ length: 12 }, (_, index) => {
-      const value = existing[index];
-      return typeof value === 'string' ? value : '';
+    const targets = equipment.reportFiles.filter((report) => {
+      if (monthKey && report.month !== monthKey) return false;
+      if (key && report.key !== key) return false;
+      return true;
     });
 
-    const oldUrl = reportUrls[monthIndex] || null;
-    reportUrls[monthIndex] = '';
+    if (targets.length > 0) {
+      await prisma.reportFile.deleteMany({ where: { id: { in: targets.map((report) => report.id) } } });
+    }
 
-    const updated = await prisma.equipment.update({
-      where: { id: equipmentId },
-      data: { reportUrls },
-      select: { reportUrls: true },
-    });
-
-    if (oldUrl) {
-      const r2 = getR2Client();
-      if (r2) {
-        const oldKey = extractR2KeyFromUrl(oldUrl);
-        if (oldKey) {
-          try {
-            await r2.send(new DeleteObjectCommand({ Bucket: process.env.R2_BUCKET_NAME, Key: oldKey }));
-          } catch (deleteErr) {
-            console.error('No se pudo borrar el reporte anterior de R2:', deleteErr);
-          }
+    // Keep the legacy 12-slot array in sync when deleting by month.
+    if (monthKey && !key) {
+      const monthIndex = getMonthIndex(monthKey);
+      if (monthIndex !== -1) {
+        const existing = Array.isArray(equipment.reportUrls) ? equipment.reportUrls : [];
+        const reportUrls = Array.from({ length: 12 }, (_, index) => {
+          const value = existing[index];
+          return typeof value === 'string' ? value : '';
+        });
+        if (reportUrls[monthIndex]) {
+          reportUrls[monthIndex] = '';
+          await prisma.equipment.update({ where: { id: equipmentId }, data: { reportUrls } });
         }
       }
     }
 
-    return new Response(JSON.stringify({ reportUrls: updated.reportUrls }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    await deleteR2Objects(targets.map((report) => report.key));
+
+    return new Response(JSON.stringify({ deleted: targets.length }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
