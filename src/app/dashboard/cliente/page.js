@@ -31,23 +31,12 @@ function formatReportDate(value) {
   }
 }
 
-function Card({ label, value, unit }) {
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-      <p className="text-xs uppercase tracking-wider text-zinc-500">{label}</p>
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-lg font-semibold text-white">{String(value ?? '-')}</span>
-        {unit ? <span className="text-sm text-zinc-500">{unit}</span> : null}
-      </div>
-    </div>
-  );
-}
-
 export default function ClientDashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
   const [equipments, setEquipments] = useState([]);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState(null);
   const [currentFichaTecnica, setCurrentFichaTecnica] = useState(null);
   const [activeMonthByEquipment, setActiveMonthByEquipment] = useState({});
 
@@ -73,20 +62,14 @@ export default function ClientDashboardPage() {
 
         if (!alive) return;
 
-        setEquipments(Array.isArray(equipmentData) ? equipmentData : []);
-
-        // Load ficha técnica for the first equipment
-        if (Array.isArray(equipmentData) && equipmentData.length > 0) {
-          try {
-            const fichaResponse = await fetch(`/api/ficha-tecnica?equipmentId=${equipmentData[0].id}`);
-            if (fichaResponse.ok) {
-              const fichaData = await fichaResponse.json();
-              if (alive) setCurrentFichaTecnica(fichaData);
-            }
-          } catch (err) {
-            console.error('Error loading ficha técnica:', err);
+        const nextEquipments = Array.isArray(equipmentData) ? equipmentData : [];
+        setEquipments(nextEquipments);
+        setSelectedEquipmentId((prevSelectedEquipmentId) => {
+          if (prevSelectedEquipmentId && nextEquipments.some((equipment) => equipment.id === prevSelectedEquipmentId)) {
+            return prevSelectedEquipmentId;
           }
-        }
+          return nextEquipments[0]?.id || null;
+        });
       } catch (error) {
         router.replace('/login');
       } finally {
@@ -101,7 +84,45 @@ export default function ClientDashboardPage() {
     };
   }, [router]);
 
-  const activeEquipment = useMemo(() => equipments[0] || null, [equipments]);
+  useEffect(() => {
+    let alive = true;
+
+    async function loadFichaTecnica() {
+      if (!selectedEquipmentId) {
+        setCurrentFichaTecnica(null);
+        return;
+      }
+
+      try {
+        const fichaResponse = await fetch(`/api/ficha-tecnica?equipmentId=${selectedEquipmentId}`);
+        if (!alive) return;
+
+        if (fichaResponse.ok) {
+          const fichaData = await fichaResponse.json();
+          if (alive) setCurrentFichaTecnica(fichaData);
+        } else {
+          setCurrentFichaTecnica(null);
+        }
+      } catch (err) {
+        if (alive) {
+          console.error('Error loading ficha técnica:', err);
+          setCurrentFichaTecnica(null);
+        }
+      }
+    }
+
+    loadFichaTecnica();
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedEquipmentId]);
+
+  const activeEquipment = useMemo(
+    () => equipments.find((equipment) => equipment.id === selectedEquipmentId) || null,
+    [equipments, selectedEquipmentId]
+  );
+
   const equipmentsWithReports = useMemo(() => {
     return equipments.map((equipment) => {
       const reportFiles = Array.isArray(equipment?.reportFiles) ? equipment.reportFiles : [];
@@ -119,6 +140,11 @@ export default function ClientDashboardPage() {
       return { equipment, months, availableMonths };
     });
   }, [equipments]);
+
+  const activeEquipmentReports = useMemo(
+    () => equipmentsWithReports.find(({ equipment }) => equipment.id === selectedEquipmentId) || null,
+    [equipmentsWithReports, selectedEquipmentId]
+  );
 
   if (loading) {
     return (
@@ -166,12 +192,24 @@ export default function ClientDashboardPage() {
                   No hay equipos registrados para este cliente.
                 </div>
               ) : (
-                equipments.map((equipment) => (
-                  <div key={equipment.id} className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
+                equipments.map((equipment) => {
+                  const isSelected = equipment.id === selectedEquipmentId;
+                  return (
+                  <button
+                    key={equipment.id}
+                    type="button"
+                    onClick={() => setSelectedEquipmentId(equipment.id)}
+                    className={`w-full rounded-2xl border p-4 text-left transition ${
+                      isSelected
+                        ? 'border-cyan-400 bg-cyan-500/15'
+                        : 'border-zinc-800 bg-zinc-950/70 hover:border-zinc-600'
+                    }`}
+                  >
                     <p className="font-semibold text-white">{equipment.internalCode || 'Sin código'}</p>
                     <p className="mt-1 text-sm text-zinc-400">{equipment.type || 'Equipo'}</p>
-                  </div>
-                ))
+                  </button>
+                );
+                })
               )}
             </div>
           </aside>
@@ -193,7 +231,8 @@ export default function ClientDashboardPage() {
                 <FichaTecnicaViewer fichaTecnica={currentFichaTecnica} />
 
                 <div className="space-y-6">
-                  {equipmentsWithReports.map(({ equipment, months, availableMonths }) => {
+                  {activeEquipmentReports ? (() => {
+                    const { equipment, months, availableMonths } = activeEquipmentReports;
                     const activeKey = activeMonthByEquipment[equipment.id]
                       || months.find((month) => month.files.length > 0 || month.legacyUrl !== '')?.key
                       || REPORT_MONTHS[new Date().getMonth()].key;
@@ -205,7 +244,7 @@ export default function ClientDashboardPage() {
                     const fileCount = activeMonth.files.length || (activeMonth.legacyUrl ? 1 : 0);
 
                     return (
-                      <div key={equipment.id} className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-5">
+                      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-5">
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Reportes</p>
@@ -286,7 +325,11 @@ export default function ClientDashboardPage() {
                         </div>
                       </div>
                     );
-                  })}
+                  })() : (
+                    <p className="rounded-2xl border border-dashed border-zinc-800 px-4 py-6 text-center text-xs text-zinc-500">
+                      Selecciona un equipo para ver sus reportes.
+                    </p>
+                  )}
                 </div>
               </div>
             )}

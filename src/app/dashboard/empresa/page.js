@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { Download, FileText, Trash2, Upload, X } from 'lucide-react';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import FichaTecnicaForm from '@/components/FichaTecnicaForm';
-import FichaTecnicaViewer from '@/components/FichaTecnicaViewer';
 import MonthlyMaintenanceReport from '@/components/MonthlyMaintenanceReport';
 import ReportMonthPicker from '@/components/ReportMonthPicker';
 import { createEmptyReportDraft } from '@/lib/reportConfig';
@@ -25,6 +24,32 @@ const REPORT_MONTHS = [
   { key: 'noviembre', label: 'Noviembre' },
   { key: 'diciembre', label: 'Diciembre' },
 ];
+
+const EQUIPMENT_TYPES = [
+  { value: 'ascensor', label: 'Ascensor' },
+  { value: 'escalera', label: 'Escalera' },
+  { value: 'puerta', label: 'Puerta' },
+];
+
+function normalizeEquipmentType(type) {
+  return String(type ?? '').trim().toLowerCase();
+}
+
+function getEquipmentTypeLabel(type) {
+  const normalized = normalizeEquipmentType(type);
+  const match = EQUIPMENT_TYPES.find((option) => option.value === normalized);
+  if (match) return match.label;
+  if (!type) return 'Sin tipo';
+  return type;
+}
+
+function getEquipmentTypeOptions(type) {
+  const normalized = normalizeEquipmentType(type);
+  if (!normalized || EQUIPMENT_TYPES.some((option) => option.value === normalized)) {
+    return EQUIPMENT_TYPES;
+  }
+  return [...EQUIPMENT_TYPES, { value: type, label: type }];
+}
 
 function createEmptyMonthlyReportFiles() {
   return REPORT_MONTHS.reduce((acc, month) => {
@@ -94,26 +119,39 @@ function InputField({ label, value, onChange, placeholder = '', type = 'text', r
   );
 }
 
+function SelectField({ label, value, onChange, options, required = false }) {
+  return (
+    <label className="block text-sm text-zinc-300">
+      <span className="text-xs uppercase tracking-[0.18em] text-zinc-500">
+        {label} {required && <span className="text-red-400">*</span>}
+      </span>
+      <select
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        className="mt-2 w-full rounded-3xl border border-zinc-800 bg-zinc-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+      >
+        <option value="" disabled>
+          Selecciona un tipo
+        </option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value} className="bg-zinc-950">
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 const emptyEquipment = {
   internalCode: '',
-  type: 'Ascensor',
-  motorBrand: '',
-  controlBrand: '',
-  cableType: '',
-  cableGauge: '',
-  maxWeight: '',
-  capacity: '',
+  type: 'ascensor',
 };
 
 const emptyClientEquipmentDraft = {
   internalCode: '',
   type: '',
-  motorBrand: '',
-  controlBrand: '',
-  cableType: '',
-  cableGauge: '',
-  maxWeight: '',
-  capacity: '',
 };
 
 const emptyPortfolioForm = {
@@ -160,8 +198,6 @@ export default function Page() {
   const [showFichaTecnicaModal, setShowFichaTecnicaModal] = useState(false);
   const [selectedEquipmentForFicha, setSelectedEquipmentForFicha] = useState(null);
   const [currentFichaTecnica, setCurrentFichaTecnica] = useState(null);
-  const [expandedFichaEquipmentId, setExpandedFichaEquipmentId] = useState(null);
-  const [loadedFichas, setLoadedFichas] = useState({});
 
   const [projects, setProjects] = useState([]);
 
@@ -264,13 +300,7 @@ export default function Page() {
       const equipments = hasEquipmentDraft
         ? [{
             internalCode: newClientEquipmentForm.internalCode,
-            type: newClientEquipmentForm.type,
-            motorBrand: newClientEquipmentForm.motorBrand,
-            controlBrand: newClientEquipmentForm.controlBrand,
-            cableType: newClientEquipmentForm.cableType,
-            cableGauge: newClientEquipmentForm.cableGauge,
-            maxWeight: newClientEquipmentForm.maxWeight,
-            capacity: newClientEquipmentForm.capacity,
+            type: normalizeEquipmentType(newClientEquipmentForm.type),
           }]
         : [];
 
@@ -313,6 +343,10 @@ export default function Page() {
       alert('El código interno es requerido');
       return;
     }
+    if (!newEquipmentForm.type) {
+      alert('El tipo de equipo es requerido');
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch('/api/equipment', {
@@ -321,13 +355,7 @@ export default function Page() {
         body: JSON.stringify({
           userId: selectedClient.id,
           internalCode: newEquipmentForm.internalCode,
-          type: newEquipmentForm.type,
-          motorBrand: newEquipmentForm.motorBrand,
-          controlBrand: newEquipmentForm.controlBrand,
-          cableType: newEquipmentForm.cableType,
-          cableGauge: newEquipmentForm.cableGauge,
-          maxWeight: newEquipmentForm.maxWeight || null,
-          capacity: newEquipmentForm.capacity || null,
+          type: normalizeEquipmentType(newEquipmentForm.type),
         }),
       });
       if (res.ok) {
@@ -636,30 +664,10 @@ export default function Page() {
     setShowFichaTecnicaModal(true);
   }
 
-  async function toggleFichaExpand(equipmentId) {
-    if (expandedFichaEquipmentId === equipmentId) {
-      setExpandedFichaEquipmentId(null);
-    } else {
-      setExpandedFichaEquipmentId(equipmentId);
-      if (!loadedFichas[equipmentId]) {
-        try {
-          const res = await fetch(`/api/ficha-tecnica?equipmentId=${equipmentId}`);
-          if (res.ok) {
-            const data = await res.json();
-            setLoadedFichas((prev) => ({ ...prev, [equipmentId]: data }));
-          }
-        } catch (err) {
-          console.error('Error loading ficha técnica:', err);
-        }
-      }
-    }
-  }
-
   function handleFichaTecnicaSaved() {
     setShowFichaTecnicaModal(false);
     setSelectedEquipmentForFicha(null);
     setCurrentFichaTecnica(null);
-    setLoadedFichas({});
     loadClients();
   }
 
@@ -868,9 +876,15 @@ export default function Page() {
 
                   <div className="space-y-4">
                     {selectedEquipments.map((equipment, idx) => (
-                      <div key={equipment.id || idx} className="rounded-[1.75rem] border border-zinc-800 bg-zinc-950/60 p-4">
-                        <p className="text-sm font-semibold mb-3">{equipment.internalCode || 'Equipo sin código'}</p>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-3">
+                      <div key={equipment.id || idx} className="rounded-[1.75rem] border border-zinc-800 bg-zinc-950/60 p-5">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold text-white">{equipment.internalCode || 'Equipo sin código'}</p>
+                          <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-300">
+                            {getEquipmentTypeLabel(equipment.type)}
+                          </span>
+                        </div>
+
+                        <div className="mb-4 grid gap-3 sm:grid-cols-2">
                           <InputField
                             label="Código interno"
                             value={equipment.internalCode}
@@ -880,7 +894,7 @@ export default function Page() {
                               setSelectedEquipments(next);
                             }}
                           />
-                          <InputField
+                          <SelectField
                             label="Tipo"
                             value={equipment.type}
                             onChange={(value) => {
@@ -888,44 +902,10 @@ export default function Page() {
                               next[idx] = { ...next[idx], type: value };
                               setSelectedEquipments(next);
                             }}
-                          />
-                          <InputField
-                            label="Marca motor"
-                            value={equipment.motorBrand}
-                            onChange={(value) => {
-                              const next = [...selectedEquipments];
-                              next[idx] = { ...next[idx], motorBrand: value };
-                              setSelectedEquipments(next);
-                            }}
-                          />
-                          <InputField
-                            label="Control eléctrico"
-                            value={equipment.controlBrand}
-                            onChange={(value) => {
-                              const next = [...selectedEquipments];
-                              next[idx] = { ...next[idx], controlBrand: value };
-                              setSelectedEquipments(next);
-                            }}
-                          />
-                          <InputField
-                            label="Tipo de cable"
-                            value={equipment.cableType}
-                            onChange={(value) => {
-                              const next = [...selectedEquipments];
-                              next[idx] = { ...next[idx], cableType: value };
-                              setSelectedEquipments(next);
-                            }}
-                          />
-                          <InputField
-                            label="Calibre"
-                            value={equipment.cableGauge}
-                            onChange={(value) => {
-                              const next = [...selectedEquipments];
-                              next[idx] = { ...next[idx], cableGauge: value };
-                              setSelectedEquipments(next);
-                            }}
+                            options={getEquipmentTypeOptions(equipment.type)}
                           />
                         </div>
+
                         <div className="flex gap-3 flex-wrap">
                           <button
                             onClick={() => handleUpdateEquipment(idx)}
@@ -934,10 +914,10 @@ export default function Page() {
                             Guardar
                           </button>
                           <button
-                            onClick={() => toggleFichaExpand(equipment.id)}
+                            onClick={() => handleOpenFichaTecnicaModal(equipment)}
                             className="rounded-3xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-500"
                           >
-                            {expandedFichaEquipmentId === equipment.id ? '▼' : '▶'} Ficha Técnica
+                            Ficha Técnica
                           </button>
                           <button
                             onClick={() => {
@@ -951,23 +931,6 @@ export default function Page() {
                             Reportes ({getMonthlyReportCount(equipment)}/12)
                           </button>
                         </div>
-
-                        {expandedFichaEquipmentId === equipment.id && (
-                          <div className="mt-6 pt-6 border-t border-zinc-700">
-                            <div className="space-y-4">
-                              <div className="flex items-center justify-between">
-                                <h4 className="text-lg font-semibold text-cyan-400">Especificaciones Técnicas</h4>
-                                <button
-                                  onClick={() => handleOpenFichaTecnicaModal(equipment)}
-                                  className="rounded-2xl bg-cyan-600/20 border border-cyan-500 px-3 py-1 text-xs font-semibold text-cyan-400 hover:bg-cyan-600/30"
-                                >
-                                  ✎ Editar
-                                </button>
-                              </div>
-                              <FichaTecnicaViewer fichaTecnica={loadedFichas[equipment.id]} />
-                            </div>
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -1079,42 +1042,11 @@ export default function Page() {
                     value={newClientEquipmentForm.internalCode}
                     onChange={(value) => setNewClientEquipmentForm({ ...newClientEquipmentForm, internalCode: value })}
                   />
-                  <InputField
+                  <SelectField
                     label="Tipo"
                     value={newClientEquipmentForm.type}
                     onChange={(value) => setNewClientEquipmentForm({ ...newClientEquipmentForm, type: value })}
-                  />
-                  <InputField
-                    label="Marca motor"
-                    value={newClientEquipmentForm.motorBrand}
-                    onChange={(value) => setNewClientEquipmentForm({ ...newClientEquipmentForm, motorBrand: value })}
-                  />
-                  <InputField
-                    label="Control eléctrico"
-                    value={newClientEquipmentForm.controlBrand}
-                    onChange={(value) => setNewClientEquipmentForm({ ...newClientEquipmentForm, controlBrand: value })}
-                  />
-                  <InputField
-                    label="Tipo de cable"
-                    value={newClientEquipmentForm.cableType}
-                    onChange={(value) => setNewClientEquipmentForm({ ...newClientEquipmentForm, cableType: value })}
-                  />
-                  <InputField
-                    label="Calibre"
-                    value={newClientEquipmentForm.cableGauge}
-                    onChange={(value) => setNewClientEquipmentForm({ ...newClientEquipmentForm, cableGauge: value })}
-                  />
-                  <InputField
-                    label="Peso máximo"
-                    type="number"
-                    value={newClientEquipmentForm.maxWeight}
-                    onChange={(value) => setNewClientEquipmentForm({ ...newClientEquipmentForm, maxWeight: value })}
-                  />
-                  <InputField
-                    label="Capacidad"
-                    type="number"
-                    value={newClientEquipmentForm.capacity}
-                    onChange={(value) => setNewClientEquipmentForm({ ...newClientEquipmentForm, capacity: value })}
+                    options={EQUIPMENT_TYPES}
                   />
                 </div>
               </div>
@@ -1152,30 +1084,12 @@ export default function Page() {
                 onChange={(value) => setNewEquipmentForm({ ...newEquipmentForm, internalCode: value })}
                 required
               />
-              <InputField
+              <SelectField
                 label="Tipo"
                 value={newEquipmentForm.type}
                 onChange={(value) => setNewEquipmentForm({ ...newEquipmentForm, type: value })}
-              />
-              <InputField
-                label="Marca motor"
-                value={newEquipmentForm.motorBrand}
-                onChange={(value) => setNewEquipmentForm({ ...newEquipmentForm, motorBrand: value })}
-              />
-              <InputField
-                label="Control eléctrico"
-                value={newEquipmentForm.controlBrand}
-                onChange={(value) => setNewEquipmentForm({ ...newEquipmentForm, controlBrand: value })}
-              />
-              <InputField
-                label="Tipo de cable"
-                value={newEquipmentForm.cableType}
-                onChange={(value) => setNewEquipmentForm({ ...newEquipmentForm, cableType: value })}
-              />
-              <InputField
-                label="Calibre"
-                value={newEquipmentForm.cableGauge}
-                onChange={(value) => setNewEquipmentForm({ ...newEquipmentForm, cableGauge: value })}
+                options={EQUIPMENT_TYPES}
+                required
               />
             </div>
             <div className="mt-6 flex gap-3">
