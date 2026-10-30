@@ -63,13 +63,10 @@ export default function IvtPdfClientPanel() {
       <button
         type="button"
         onClick={handleTogglePanel}
-        className="flex w-full items-center justify-between rounded-2xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-left text-sm font-semibold text-cyan-200 transition hover:bg-cyan-500/20"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-500/20"
       >
-        <span className="inline-flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          Archivos PDF ITV
-        </span>
-        <span className="text-xs uppercase tracking-[0.18em] text-cyan-300">{isOpen ? 'Ocultar' : 'Abrir'}</span>
+        <FileText className="h-4 w-4" />
+        Archivos PDF ITV
       </button>
 
       {isOpen && (
