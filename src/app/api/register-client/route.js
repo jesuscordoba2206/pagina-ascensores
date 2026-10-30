@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { normalizeEmail, normalizeOptionalText, requireEnterpriseRole } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
+import { normalizeEquipmentType } from '@/lib/equipmentTypes';
 
 export async function POST(request) {
   const unauthorized = await requireEnterpriseRole(request);
@@ -38,11 +39,16 @@ export async function POST(request) {
     for (const item of equipmentList) {
       if (!item || !item.internalCode || !item.type) continue;
 
+      const normalizedType = normalizeEquipmentType(item.type);
+      if (!normalizedType) {
+        return new Response(JSON.stringify({ error: 'Invalid equipment type' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
       await prisma.equipment.create({
         data: {
           userId: newClient.id,
           internalCode: String(item.internalCode).trim(),
-          type: String(item.type).trim(),
+          type: normalizedType,
           motorBrand: normalizeOptionalText(item.motorBrand),
           controlBrand: normalizeOptionalText(item.controlBrand),
           cableType: normalizeOptionalText(item.cableType),

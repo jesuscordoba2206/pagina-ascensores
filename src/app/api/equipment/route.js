@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { getSessionUser, requireEnterpriseRole } from '@/lib/auth';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getR2Client } from '@/lib/r2';
+import { normalizeEquipmentType } from '@/lib/equipmentTypes';
 import { sortReportFiles } from '@/lib/reports';
 
 export async function GET(request) {
@@ -29,6 +30,7 @@ export async function GET(request) {
 
     const normalized = items.map((item) => ({
       ...item,
+      type: normalizeEquipmentType(item.type) || item.type,
       reportFiles: sortReportFiles(item.reportFiles),
     }));
 
@@ -49,11 +51,16 @@ export async function POST(request) {
       return new Response(JSON.stringify({ error: 'Missing required equipment fields' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
+    const normalizedType = normalizeEquipmentType(type);
+    if (!normalizedType) {
+      return new Response(JSON.stringify({ error: 'Invalid equipment type' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const created = await prisma.equipment.create({
       data: {
         user: { connect: { id: userId } },
         internalCode,
-        type,
+        type: normalizedType,
         motorBrand,
         controlBrand,
         cableType,
@@ -80,11 +87,17 @@ export async function PUT(request) {
       return new Response(JSON.stringify({ error: 'Missing equipment id' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
+    const hasType = Object.prototype.hasOwnProperty.call(body, 'type');
+    const normalizedType = hasType ? normalizeEquipmentType(type) : null;
+    if (hasType && !normalizedType) {
+      return new Response(JSON.stringify({ error: 'Invalid equipment type' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const updated = await prisma.equipment.update({
       where: { id },
       data: {
         internalCode: internalCode ?? undefined,
-        type: type ?? undefined,
+        type: hasType ? normalizedType : undefined,
         motorBrand: motorBrand ?? undefined,
         controlBrand: controlBrand ?? undefined,
         cableType: cableType ?? undefined,

@@ -1,5 +1,22 @@
 import { prisma } from '@/lib/prisma';
 import { normalizeEmail, normalizeOptionalText, requireEnterpriseRole, toPublicUser } from '@/lib/auth';
+import { normalizeEquipmentType } from '@/lib/equipmentTypes';
+
+function normalizeEquipments(equipments) {
+  if (!Array.isArray(equipments)) return [];
+  return equipments.map((equipment) => ({
+    ...equipment,
+    type: normalizeEquipmentType(equipment.type) || equipment.type,
+  }));
+}
+
+function normalizeClientPayload(client) {
+  if (!client) return client;
+  return {
+    ...client,
+    equipments: normalizeEquipments(client.equipments),
+  };
+}
 
 export async function GET(request) {
   const unauthorized = await requireEnterpriseRole(request);
@@ -14,7 +31,7 @@ export async function GET(request) {
         where: { id },
         include: { equipments: { include: { reportFiles: true }, orderBy: { createdAt: 'desc' } } },
       });
-      return new Response(JSON.stringify(toPublicUser(user)), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify(normalizeClientPayload(toPublicUser(user))), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     const clients = await prisma.user.findMany({
@@ -22,7 +39,7 @@ export async function GET(request) {
       include: { equipments: { include: { reportFiles: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    return new Response(JSON.stringify(clients.map(toPublicUser)), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify(clients.map(toPublicUser).map(normalizeClientPayload)), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
@@ -48,7 +65,7 @@ export async function PUT(request) {
       },
       include: { equipments: { include: { reportFiles: true } } },
     });
-    return new Response(JSON.stringify(toPublicUser(updated)), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify(normalizeClientPayload(toPublicUser(updated))), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }

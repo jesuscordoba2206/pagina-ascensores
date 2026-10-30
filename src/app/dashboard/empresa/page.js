@@ -9,6 +9,11 @@ import FichaTecnicaForm from '@/components/FichaTecnicaForm';
 import IvtPdfAdminPanel from '@/components/IvtPdfAdminPanel';
 import MonthlyMaintenanceReport from '@/components/MonthlyMaintenanceReport';
 import ReportMonthPicker from '@/components/ReportMonthPicker';
+import {
+  DEFAULT_EQUIPMENT_TYPE,
+  EQUIPMENT_TYPE_OPTIONS,
+  normalizeEquipmentType,
+} from '@/lib/equipmentTypes';
 import { createEmptyReportDraft } from '@/lib/reportConfig';
 
 const REPORT_MONTHS = [
@@ -26,30 +31,11 @@ const REPORT_MONTHS = [
   { key: 'diciembre', label: 'Diciembre' },
 ];
 
-const EQUIPMENT_TYPES = [
-  { value: 'ascensor', label: 'Ascensor' },
-  { value: 'escalera', label: 'Escalera' },
-  { value: 'puerta', label: 'Puerta' },
-];
-
-function normalizeEquipmentType(type) {
-  return String(type ?? '').trim().toLowerCase();
-}
-
 function getEquipmentTypeLabel(type) {
   const normalized = normalizeEquipmentType(type);
-  const match = EQUIPMENT_TYPES.find((option) => option.value === normalized);
-  if (match) return match.label;
+  if (normalized) return normalized;
   if (!type) return 'Sin tipo';
   return type;
-}
-
-function getEquipmentTypeOptions(type) {
-  const normalized = normalizeEquipmentType(type);
-  if (!normalized || EQUIPMENT_TYPES.some((option) => option.value === normalized)) {
-    return EQUIPMENT_TYPES;
-  }
-  return [...EQUIPMENT_TYPES, { value: type, label: type }];
 }
 
 function createEmptyMonthlyReportFiles() {
@@ -147,12 +133,12 @@ function SelectField({ label, value, onChange, options, required = false }) {
 
 const emptyEquipment = {
   internalCode: '',
-  type: 'ascensor',
+  type: DEFAULT_EQUIPMENT_TYPE,
 };
 
 const emptyClientEquipmentDraft = {
   internalCode: '',
-  type: '',
+  type: DEFAULT_EQUIPMENT_TYPE,
 };
 
 const emptyPortfolioForm = {
@@ -308,10 +294,16 @@ export default function Page() {
 
     setSaving(true);
     try {
+      const normalizedDraftType = normalizeEquipmentType(newClientEquipmentForm.type);
+      if (hasEquipmentDraft && !normalizedDraftType) {
+        alert('Selecciona un tipo de equipo válido.');
+        return;
+      }
+
       const equipments = hasEquipmentDraft
         ? [{
             internalCode: newClientEquipmentForm.internalCode,
-            type: normalizeEquipmentType(newClientEquipmentForm.type),
+            type: normalizedDraftType,
           }]
         : [];
 
@@ -358,6 +350,13 @@ export default function Page() {
       alert('El tipo de equipo es requerido');
       return;
     }
+
+    const normalizedType = normalizeEquipmentType(newEquipmentForm.type);
+    if (!normalizedType) {
+      alert('Selecciona un tipo de equipo válido.');
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch('/api/equipment', {
@@ -366,7 +365,7 @@ export default function Page() {
         body: JSON.stringify({
           userId: selectedClient.id,
           internalCode: newEquipmentForm.internalCode,
-          type: normalizeEquipmentType(newEquipmentForm.type),
+          type: normalizedType,
         }),
       });
       if (res.ok) {
@@ -889,97 +888,95 @@ export default function Page() {
                   </div>
 
                   <div className="space-y-4">
-                    {selectedEquipments.map((equipment, idx) => (
-                      (() => {
-                        const equipmentKey = equipment.id || `equipment-${idx}`;
-                        const isExpanded = resolvedExpandedEquipmentId === equipmentKey;
-                        const equipmentTypeLabel = getEquipmentTypeLabel(equipment.type);
+                    {selectedEquipments.map((equipment, idx) => {
+                      const equipmentKey = equipment.id || `equipment-${idx}`;
+                      const isExpanded = resolvedExpandedEquipmentId === equipmentKey;
+                      const equipmentTypeLabel = getEquipmentTypeLabel(equipment.type);
 
-                        return (
-                          <div key={equipmentKey} className="overflow-hidden rounded-[1.4rem] border border-zinc-800 bg-zinc-950/60">
-                            <button
-                              type="button"
-                              onClick={() => setExpandedEquipmentId(isExpanded ? null : equipmentKey)}
-                              className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-zinc-900/50"
-                              aria-expanded={isExpanded}
-                              aria-controls={`equipment-panel-${equipmentKey}`}
-                            >
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-white">{`${equipmentTypeLabel} ${idx + 1}`}</p>
-                                <p className="mt-1 truncate text-xs text-zinc-400">
-                                  {equipment.internalCode || 'Equipo sin código'}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-300">
-                                  {equipmentTypeLabel}
-                                </span>
-                                <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-300">
-                                  {getMonthlyReportCount(equipment)}/12
-                                </span>
-                                {isExpanded ? (
-                                  <ChevronUp className="h-4 w-4 text-zinc-400" />
-                                ) : (
-                                  <ChevronDown className="h-4 w-4 text-zinc-400" />
-                                )}
-                              </div>
-                            </button>
+                      return (
+                        <div key={equipmentKey} className="overflow-hidden rounded-[1.4rem] border border-zinc-800 bg-zinc-950/60">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedEquipmentId(isExpanded ? null : equipmentKey)}
+                            className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-zinc-900/50"
+                            aria-expanded={isExpanded}
+                            aria-controls={`equipment-panel-${equipmentKey}`}
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-white">{`${equipmentTypeLabel} ${idx + 1}`}</p>
+                              <p className="mt-1 truncate text-xs text-zinc-400">
+                                {equipment.internalCode || 'Equipo sin código'}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-300">
+                                {equipmentTypeLabel}
+                              </span>
+                              <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-300">
+                                {getMonthlyReportCount(equipment)}/12
+                              </span>
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4 text-zinc-400" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-zinc-400" />
+                              )}
+                            </div>
+                          </button>
 
-                            {isExpanded && (
-                              <div id={`equipment-panel-${equipmentKey}`} className="border-t border-zinc-800 p-5">
-                                <div className="mb-4 grid gap-3 sm:grid-cols-2">
-                                  <InputField
-                                    label="Código interno"
-                                    value={equipment.internalCode}
-                                    onChange={(value) => {
-                                      const next = [...selectedEquipments];
-                                      next[idx] = { ...next[idx], internalCode: value };
-                                      setSelectedEquipments(next);
-                                    }}
-                                  />
-                                  <SelectField
-                                    label="Tipo"
-                                    value={equipment.type}
-                                    onChange={(value) => {
-                                      const next = [...selectedEquipments];
-                                      next[idx] = { ...next[idx], type: value };
-                                      setSelectedEquipments(next);
-                                    }}
-                                    options={getEquipmentTypeOptions(equipment.type)}
-                                  />
-                                </div>
-
-                                <div className="flex gap-3 flex-wrap">
-                                  <button
-                                    onClick={() => handleUpdateEquipment(idx)}
-                                    className="rounded-3xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-400"
-                                  >
-                                    Guardar
-                                  </button>
-                                  <button
-                                    onClick={() => handleOpenFichaTecnicaModal(equipment)}
-                                    className="rounded-3xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-500"
-                                  >
-                                    Ficha Técnica
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedEquipmentForReport(equipment);
-                                      setReportFilesByMonth(createEmptyMonthlyReportFiles());
-                                      setActiveReportMonthKey(getDefaultReportMonthKey(equipment));
-                                      setShowReportModal(true);
-                                    }}
-                                    className="rounded-3xl bg-blue-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-blue-400"
-                                  >
-                                    Reportes ({getMonthlyReportCount(equipment)}/12)
-                                  </button>
-                                </div>
+                          {isExpanded && (
+                            <div id={`equipment-panel-${equipmentKey}`} className="border-t border-zinc-800 p-5">
+                              <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                                <InputField
+                                  label="Código interno"
+                                  value={equipment.internalCode}
+                                  onChange={(value) => {
+                                    const next = [...selectedEquipments];
+                                    next[idx] = { ...next[idx], internalCode: value };
+                                    setSelectedEquipments(next);
+                                  }}
+                                />
+                                <SelectField
+                                  label="Tipo"
+                                  value={equipment.type}
+                                  onChange={(value) => {
+                                    const next = [...selectedEquipments];
+                                    next[idx] = { ...next[idx], type: value };
+                                    setSelectedEquipments(next);
+                                  }}
+                                  options={EQUIPMENT_TYPE_OPTIONS}
+                                />
                               </div>
-                            )}
-                          </div>
-                        );
-                      })()
-                    ))}
+
+                              <div className="flex gap-3 flex-wrap">
+                                <button
+                                  onClick={() => handleUpdateEquipment(idx)}
+                                  className="rounded-3xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-400"
+                                >
+                                  Guardar
+                                </button>
+                                <button
+                                  onClick={() => handleOpenFichaTecnicaModal(equipment)}
+                                  className="rounded-3xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-500"
+                                >
+                                  Ficha Técnica
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedEquipmentForReport(equipment);
+                                    setReportFilesByMonth(createEmptyMonthlyReportFiles());
+                                    setActiveReportMonthKey(getDefaultReportMonthKey(equipment));
+                                    setShowReportModal(true);
+                                  }}
+                                  className="rounded-3xl bg-blue-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-blue-400"
+                                >
+                                  Reportes ({getMonthlyReportCount(equipment)}/12)
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </section>
               </>
@@ -1093,7 +1090,7 @@ export default function Page() {
                     label="Tipo"
                     value={newClientEquipmentForm.type}
                     onChange={(value) => setNewClientEquipmentForm({ ...newClientEquipmentForm, type: value })}
-                    options={EQUIPMENT_TYPES}
+                    options={EQUIPMENT_TYPE_OPTIONS}
                   />
                 </div>
               </div>
@@ -1135,9 +1132,9 @@ export default function Page() {
                 label="Tipo"
                 value={newEquipmentForm.type}
                 onChange={(value) => setNewEquipmentForm({ ...newEquipmentForm, type: value })}
-                options={EQUIPMENT_TYPES}
-                required
-              />
+                    options={EQUIPMENT_TYPE_OPTIONS}
+                    required
+                  />
             </div>
             <div className="mt-6 flex gap-3">
               <button
