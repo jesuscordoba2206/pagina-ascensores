@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Download, FileText } from 'lucide-react';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import FichaTecnicaViewer from '@/components/FichaTecnicaViewer';
+import IvtPdfClientPanel from '@/components/IvtPdfClientPanel';
 import ReportMonthPicker from '@/components/ReportMonthPicker';
 
 const REPORT_MONTHS = [
@@ -213,6 +214,10 @@ export default function ClientDashboardPage() {
                 })
               )}
             </div>
+
+            <div className="mt-6">
+              <IvtPdfClientPanel />
+            </div>
           </aside>
 
           <section className="rounded-[2rem] border border-zinc-800 bg-zinc-900/40 p-6 shadow-xl shadow-cyan-500/10 backdrop-blur-md">
@@ -336,6 +341,7 @@ export default function ClientDashboardPage() {
             )}
           </section>
         </main>
+
       </div>
     </div>
   );

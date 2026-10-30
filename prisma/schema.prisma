@@ -20,6 +20,7 @@ model User {
   createdAt  DateTime?   @default(now())
   updatedAt  DateTime?   @updatedAt
   equipments Equipment[]
+  itvPdfAccesses IvtPdfAccess[]
 
   @@map("User")
 }
@@ -137,4 +138,37 @@ model Project {
   description String?
   imageUrl    String
   createdAt   DateTime @default(now())
+}
+
+enum IvtPdfScope {
+  GLOBAL
+  SPECIFIC
+}
+
+model IvtPdfFile {
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  fileName     String
+  key          String         @unique
+  url          String
+  size         Int?
+  scope        IvtPdfScope    @default(GLOBAL)
+  allowedUsers IvtPdfAccess[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([scope, createdAt])
+  @@map("IvtPdfFile")
+}
+
+model IvtPdfAccess {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  file      IvtPdfFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  fileId    String     @db.ObjectId
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String     @db.ObjectId
+  createdAt DateTime   @default(now())
+
+  @@unique([fileId, userId])
+  @@index([userId])
+  @@map("IvtPdfAccess")
 }

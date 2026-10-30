@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Download, FileText, Trash2, Upload, X } from 'lucide-react';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import FichaTecnicaForm from '@/components/FichaTecnicaForm';
+import IvtPdfAdminPanel from '@/components/IvtPdfAdminPanel';
 import MonthlyMaintenanceReport from '@/components/MonthlyMaintenanceReport';
 import ReportMonthPicker from '@/components/ReportMonthPicker';
 import { createEmptyReportDraft } from '@/lib/reportConfig';
@@ -775,6 +776,8 @@ export default function Page() {
 
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
           <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900/50 p-6">
+            <IvtPdfAdminPanel clients={clients} />
+
             <div className="flex items-center justify-between gap-3 mb-6">
               <h2 className="text-lg font-semibold">Clientes</h2>
               <div className="flex items-center gap-2">
