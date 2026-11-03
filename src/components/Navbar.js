@@ -62,7 +62,7 @@ export default function Navbar() {
             <Link href="/" className="text-sm font-medium uppercase tracking-wide text-white transition-all duration-300 hover:text-cyan-400">
               Inicio
             </Link>
-            <Link href="/servicios#ascensores" className="text-sm font-medium uppercase tracking-wide text-white transition-all duration-300 hover:text-cyan-400">
+            <Link href="/servicios" className="text-sm font-medium uppercase tracking-wide text-white transition-all duration-300 hover:text-cyan-400">
               Servicios
             </Link>
             <Link href="/catalogo" className="text-sm font-medium uppercase tracking-wide text-white transition-all duration-300 hover:text-cyan-400">
@@ -114,7 +114,7 @@ export default function Navbar() {
               <Link href="/empresa" onClick={closeMobileMenu} className="rounded-xl px-4 py-4 text-xl font-bold uppercase tracking-wide text-white transition active:bg-white/10 touch-manipulation">
                 Empresa
               </Link>
-              <Link href="/servicios#ascensores" onClick={closeMobileMenu} className="rounded-xl px-4 py-4 text-xl font-bold uppercase tracking-wide text-white transition active:bg-white/10 touch-manipulation">
+              <Link href="/servicios" onClick={closeMobileMenu} className="rounded-xl px-4 py-4 text-xl font-bold uppercase tracking-wide text-white transition active:bg-white/10 touch-manipulation">
                 Servicios
               </Link>
               <Link href="/catalogo" onClick={closeMobileMenu} className="rounded-xl px-4 py-4 text-xl font-bold uppercase tracking-wide text-white transition active:bg-white/10 touch-manipulation">

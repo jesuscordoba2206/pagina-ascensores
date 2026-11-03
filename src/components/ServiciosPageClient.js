@@ -1,54 +1,79 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Navbar from '@/components/Navbar';
-import { Cog, Wrench, Hammer, Clock3 } from 'lucide-react';
+import { ArrowUpRight, Clock3, Cog, Hammer, Wrench } from 'lucide-react';
 
 const categories = {
-  ascensores: [
-    {
-      title: 'Mantenimiento Preventivo',
-      description: 'Garantizamos la continuidad operativa y la seguridad de sus pasajeros bajo los lineamientos de la norma NTC 2503. Ejecutamos rutinas mensuales estrictas de lubricacion de guias, calibracion de frenos de maquina y revision de cables de traccion, preparando su equipo para superar con exito la certificacion anual obligatoria en Colombia.',
-      icon: Cog,
-    },
-    {
-      title: 'Instalacion y Modernizacion',
-      description: 'Diseno y montaje de sistemas de transporte vertical de ultima tecnologia, cumpliendo con los estandares internacionales de construccion y las normas NTC 2769-1 y NTC 2769-2. Adaptamos cabinas modernas con criterios de accesibilidad universal segun la NTC 4349, optimizando el espacio, el confort y el consumo energetico.',
-      icon: Wrench,
-    },
-    {
-      title: 'Reparaciones y Adecuacion Normativa',
-      description: 'Sustitucion de componentes criticos y correccion de fallas mecanicas o electricas con repuestos de alta trazabilidad. Nos especializamos en la subsanacion inmediata de hallazgos detectados por organismos de inspeccion acreditados (ONAC), instalando cortinas infrarrojas, operadores de puerta avanzados y sistemas de paracaidas segun la NTC 5926-1.',
-      icon: Hammer,
-    },
-    {
-      title: 'Atencion de Emergencias 24/7',
-      description: 'Soporte tecnico prioritario y rescate de usuarios disponible las 24 horas, los 365 dias del ano. Minimizamos los tiempos de respuesta ante atrapamientos o fallas criticas, implementando protocolos avanzados y sistemas de comunicacion bidireccional en cabina bajo el estandar de seguridad EN 81-28.',
-      icon: Clock3,
-    },
-  ],
-  escaleras: [
-    {
-      title: 'Mantenimiento Preventivo',
-      description: 'Preservamos la vida util y el flujo continuo de usuarios en zonas de alto trafico. Realizamos rutinas periodicas de limpieza tecnica, alineacion de cadenas de arrastre, revision de sistemas motrices y verificacion de sensores de seguridad, alineados estrictamente con las exigencias preventivas de la norma NTC 5926-2.',
-      icon: Cog,
-    },
-    {
-      title: 'Instalacion y Montaje Tecnico',
-      description: 'Planificacion, ingenieria y ensamble de escaleras mecanicas y andenes moviles de alta resistencia para proyectos comerciales o residenciales. Aseguramos que la inclinacion, la velocidad nominal y los pasamanos cumplan rigurosamente con los codigos de seguridad estructural y los parametros de ingenieria nacionales.',
-      icon: Wrench,
-    },
-    {
-      title: 'Reparaciones y Seguridad Activa',
-      description: 'Intervencion correctiva especializada en sistemas de peldanos, peines de entrada y pasamanos. Corregimos desviaciones mecanicas y actualizamos los dispositivos de seguridad activa (sensores de rotura de cadena, botones de parada de emergencia y demarcacion de escalones) para garantizar la certificacion obligatoria y evitar accidentes.',
-      icon: Hammer,
-    },
-    {
-      title: 'Monitoreo y Soporte 24/7',
-      description: 'Atencion tecnica inmediata ante paradas imprevistas o bloqueos de seguridad en el sistema de transporte. Nuestro equipo de tecnicos certificados esta listo para intervenir de manera oportuna, restableciendo el flujo peatonal de forma segura y minimizando el impacto operativo en su edificio o centro comercial.',
-      icon: Clock3,
-    },
-  ],
+  ascensores: {
+    label: 'Ascensores',
+    title: 'Servicios de ascensores en Colombia.',
+    cards: [
+      {
+        title: 'Mantenimiento Preventivo',
+        subtitle: 'Seguridad en cada recorrido',
+        points: ['Lubricación de componentes', 'Calibración de sistemas', 'Norma NTC 2503'],
+        image: '/mantenimientoAscensor.jpg',
+        icon: Cog,
+      },
+      {
+        title: 'Instalación y Modernización',
+        subtitle: 'Tecnología que eleva sus espacios',
+        points: ['Cabinas a medida', 'Eficiencia energética', 'Cumplimiento de normas NTC'],
+        image: '/instalacionAscensor.jpg',
+        icon: Wrench,
+      },
+      {
+        title: 'Reparaciones y Adecuación Normativa',
+        subtitle: 'Confianza que se mantiene en movimiento',
+        points: ['Subsanación de hallazgos ONAC', 'Sistemas de paracaídas', 'Norma NTC 5926-1'],
+        image: '/reparacionAscensor.jpg',
+        icon: Hammer,
+      },
+      {
+        title: 'Atención de Emergencias 24/7',
+        subtitle: 'Siempre cerca cuando nos necesita',
+        points: ['Rescate de usuarios', 'Protocolos de atención', 'Norma EN 81-28'],
+        image: '/emergenciaAscensor.jpg',
+        icon: Clock3,
+      },
+    ],
+  },
+  escaleras: {
+    label: 'Escaleras eléctricas',
+    title: 'Servicios de escaleras eléctricas en Colombia.',
+    cards: [
+      {
+        title: 'Mantenimiento Preventivo',
+        subtitle: 'Continuidad para espacios en movimiento',
+        points: ['Inspección de cadenas', 'Sistemas de transmisión', 'Seguridad de peines'],
+        image: '/mantenimientoEscalera.jpg',
+        icon: Cog,
+      },
+      {
+        title: 'Modernización y Optimización',
+        subtitle: 'Eficiencia para un mejor recorrido',
+        points: ['Actualización de sistemas de tracción', 'Iluminación LED de guía', 'Ahorro energético'],
+        image: '/instalacionEscalera.jpg',
+        icon: Wrench,
+      },
+      {
+        title: 'Reparaciones Especializadas',
+        subtitle: 'Precisión en cada intervención',
+        points: ['Corrección de fallas mecánicas', 'Sustitución de peldaños', 'Ajuste de sistemas de parada de emergencia'],
+        image: '/reparacionEscalera.jpg',
+        icon: Hammer,
+      },
+      {
+        title: 'Soporte Técnico y Emergencias',
+        subtitle: 'Respuesta oportuna para mantener el flujo',
+        points: ['Atención prioritaria ante paradas imprevistas', 'Soporte en centros comerciales', 'Atención en espacios de alto flujo'],
+        image: '/emergenciaEscalera.jpg',
+        icon: Clock3,
+      },
+    ],
+  },
 };
 
 function categoryFromHash() {
@@ -59,11 +84,12 @@ function categoryFromHash() {
 
 export default function ServiciosPageClient() {
   const [activeCategory, setActiveCategory] = useState('ascensores');
-  const cards = activeCategory === 'ascensores' ? categories.ascensores : categories.escaleras;
+  const category = categories[activeCategory];
 
   useEffect(() => {
     const syncFromHash = () => {
       setActiveCategory(categoryFromHash());
+      window.scrollTo(0, 0);
     };
 
     syncFromHash();
@@ -71,79 +97,117 @@ export default function ServiciosPageClient() {
     return () => window.removeEventListener('hashchange', syncFromHash);
   }, []);
 
-  const changeCategory = (category) => {
-    setActiveCategory(category);
-    window.history.replaceState(null, '', `/servicios#${category}`);
+  const changeCategory = (nextCategory) => {
+    setActiveCategory(nextCategory);
+    window.history.replaceState(null, '', `/servicios#${nextCategory}`);
   };
 
   return (
     <div className="relative min-h-screen bg-[url('/fondo_img.jpg')] bg-cover bg-center bg-no-repeat text-white md:bg-fixed">
-      <div className="absolute inset-0 bg-black/75 z-0" />
+      <span id="ascensores" aria-hidden="true" className="absolute -top-24 h-px w-px md:-top-28" />
+      <span id="escaleras" aria-hidden="true" className="absolute -top-24 h-px w-px md:-top-28" />
+      <div className="absolute inset-0 bg-zinc-950/85" />
 
-      <div className="relative z-10">
+      <div className="relative">
         <Navbar />
 
-        <section className="pt-28 pb-20 px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="mb-12 text-center">
-              <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tight">Servicios de ascensores y escaleras electricas en Colombia.</h1>
-              <p className="mx-auto mt-6 max-w-2xl text-zinc-400 font-light leading-relaxed">
-                Selecciona la categoria y descubre nuestros servicios especializados para ascensores y escaleras electricas.
-              </p>
-            </div>
+        <main className="px-5 pb-20 pt-24 sm:px-8 md:pt-28 lg:px-12">
+          <div className="mx-auto max-w-7xl">
+            <header className="mb-10 md:mb-14">
+              <div className="mb-8 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
+                <span className="h-px w-9 bg-cyan-400" />
+                Ingeniería en transporte vertical
+              </div>
 
-            <div className="mb-10 flex flex-col gap-4 items-center sm:flex-row sm:justify-center">
-              <button
-                id="ascensores"
-                type="button"
-                onClick={() => changeCategory('ascensores')}
-                className={`min-w-[260px] rounded-full px-10 py-6 text-lg font-black tracking-widest transition-all duration-300 sm:px-12 bg-zinc-900/40 backdrop-blur-md border border-zinc-800/50 ${
-                  activeCategory === 'ascensores'
-                    ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.25)]'
-                    : 'text-zinc-400 hover:text-white hover:border-zinc-700'
-                }`}
-              >
-                ASCENSORES
-              </button>
-              <button
-                id="escaleras"
-                type="button"
-                onClick={() => changeCategory('escaleras')}
-                className={`min-w-[260px] rounded-full px-10 py-6 text-lg font-black tracking-widest transition-all duration-300 sm:px-12 bg-zinc-900/40 backdrop-blur-md border border-zinc-800/50 ${
-                  activeCategory === 'escaleras'
-                    ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.25)]'
-                    : 'text-zinc-400 hover:text-white hover:border-zinc-700'
-                }`}
-              >
-                ESCALERAS ELECTRICAS
-              </button>
-            </div>
+              <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-3xl">
+                  <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
+                    {category.title}
+                  </h1>
+                  <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-300 sm:text-base">
+                    Soluciones especializadas para mantener sus espacios seguros y en movimiento.
+                  </p>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {cards.map((card) => {
+                <div aria-label="Tipo de servicio" className="inline-flex w-full rounded-2xl border border-white/10 bg-zinc-950/65 p-1.5 backdrop-blur-xl sm:w-fit">
+                  {Object.entries(categories).map(([key, item]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-pressed={activeCategory === key}
+                      onClick={() => changeCategory(key)}
+                      className={`flex-1 rounded-xl px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 sm:flex-none sm:px-5 sm:text-xs ${
+                        activeCategory === key
+                          ? 'bg-cyan-400 text-zinc-950 shadow-[0_0_24px_rgba(34,211,238,0.2)]'
+                          : 'text-zinc-300 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </header>
+
+            <div key={activeCategory} className="servicios-grid grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-5">
+              {category.cards.map((card, index) => {
                 const Icon = card.icon;
+                const subject = encodeURIComponent(`Consulta: ${card.title} - ${category.label}`);
+
                 return (
                   <article
                     key={card.title}
-                    className="group w-full text-left bg-zinc-900/40 backdrop-blur-md border border-zinc-800/50 rounded-[2.5rem] p-10 hover:-translate-y-1 hover:border-cyan-400 transition-all duration-300 h-full"
+                    className={`group relative isolate flex min-h-[350px] flex-col overflow-hidden rounded-[1.75rem] border border-white/15 bg-zinc-900/70 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-colors duration-300 hover:border-cyan-400/40 sm:p-8 ${
+                      index === 0 || index === 3 ? 'md:col-span-7' : 'md:col-span-5'
+                    }`}
                   >
-                    <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-[1.75rem] bg-cyan-500/10 text-cyan-400 shadow-[0_15px_30px_-20px_rgba(14,165,233,0.7)]">
-                      <Icon className="h-7 w-7" />
+                    <Image
+                      src={card.image}
+                      alt=""
+                      fill
+                      sizes="(max-width: 767px) 100vw, (max-width: 1280px) 60vw, 750px"
+                      className="-z-20 object-cover opacity-30 transition-transform duration-700 motion-safe:group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 -z-10 bg-gradient-to-r from-zinc-950/95 via-zinc-950/75 to-zinc-950/45" />
+
+                    <div className="mb-7 flex items-start justify-between gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-400/10 text-cyan-300">
+                        <Icon className="h-6 w-6" aria-hidden="true" />
+                      </div>
+                      <span className="text-xs font-medium tracking-[0.2em] text-white/50">0{index + 1} / 04</span>
                     </div>
-                    <h2 className="text-3xl font-bold text-white mb-4">{card.title}</h2>
-                    <p className="text-zinc-400 font-light leading-relaxed">
-                      {card.description}
-                    </p>
+
+                    <h2 className="max-w-lg text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">{card.title}</h2>
+                    <p className="mt-2 text-sm italic text-cyan-100/75">{card.subtitle}</p>
+
+                    <ul className="mt-6 space-y-2.5 text-sm leading-relaxed text-zinc-200">
+                      {card.points.map((point) => (
+                        <li key={point} className="flex items-start gap-3">
+                          <span aria-hidden="true" className="mt-2 h-1 w-1 shrink-0 rounded-full bg-cyan-400" />
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-auto flex justify-end pt-7">
+                      <a
+                        href={`mailto:elevatorscompanyantioquia@gmail.com?subject=${subject}`}
+                        aria-label={`Consultar sobre ${card.title} de ${category.label}`}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/5 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:border-cyan-300 hover:bg-cyan-400 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                      >
+                        Consultar servicio <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                      </a>
+                    </div>
                   </article>
                 );
               })}
             </div>
           </div>
-        </section>
+        </main>
 
-        <footer className="bg-black border-t border-gray-800 py-12 px-6">
-          <div className="max-w-6xl mx-auto text-center">
-            <p className="text-gray-500 text-sm tracking-wide">© 2026 J_web. Ingenieria en Transporte Vertical.</p>
+        <footer className="border-t border-white/10 bg-black/80 px-6 py-12">
+          <div className="mx-auto max-w-6xl text-center">
+            <p className="text-sm tracking-wide text-gray-500">© 2026 J_web. Ingeniería en Transporte Vertical.</p>
           </div>
         </footer>
       </div>

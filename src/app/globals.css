@@ -25,6 +25,17 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .servicios-grid {
+    animation: servicios-entrada 350ms ease-out both;
+  }
+
+  @keyframes servicios-entrada {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
 @media print {
   body {
     background: #fff;

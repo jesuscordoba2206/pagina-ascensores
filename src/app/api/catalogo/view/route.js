@@ -13,6 +13,45 @@ function json(data, status = 200) {
   });
 }
 
+function parseByteRange(rangeHeader, fileSize) {
+  if (!rangeHeader || !rangeHeader.startsWith('bytes=')) return null;
+
+  const rawRanges = rangeHeader.replace('bytes=', '').split(',');
+  if (rawRanges.length !== 1) return null;
+
+  const [startValue, endValue] = rawRanges[0].trim().split('-');
+  if (typeof startValue === 'undefined' || typeof endValue === 'undefined') return null;
+
+  if (!startValue) {
+    const suffixLength = Number(endValue);
+    if (Number.isNaN(suffixLength) || suffixLength <= 0) return null;
+
+    const length = Math.min(suffixLength, fileSize);
+    return {
+      start: Math.max(fileSize - length, 0),
+      end: fileSize - 1,
+    };
+  }
+
+  const start = Number(startValue);
+  if (Number.isNaN(start) || start < 0 || start >= fileSize) return null;
+
+  if (!endValue) {
+    return {
+      start,
+      end: fileSize - 1,
+    };
+  }
+
+  const end = Number(endValue);
+  if (Number.isNaN(end) || end < start) return null;
+
+  return {
+    start,
+    end: Math.min(end, fileSize - 1),
+  };
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const token = String(searchParams.get('token') || '').trim();
@@ -36,8 +75,8 @@ export async function GET(request) {
     };
 
     if (rangeHeader) {
-      const match = /bytes=(\d*)-(\d*)/.exec(rangeHeader);
-      if (!match) {
+      const range = parseByteRange(rangeHeader, fileSize);
+      if (!range) {
         return new Response(null, {
           status: 416,
           headers: {
@@ -47,26 +86,7 @@ export async function GET(request) {
         });
       }
 
-      let start = match[1] ? Number(match[1]) : 0;
-      let end = match[2] ? Number(match[2]) : fileSize - 1;
-
-      if (
-        Number.isNaN(start)
-        || Number.isNaN(end)
-        || start < 0
-        || end < start
-        || start >= fileSize
-      ) {
-        return new Response(null, {
-          status: 416,
-          headers: {
-            ...baseHeaders,
-            'Content-Range': `bytes */${fileSize}`,
-          },
-        });
-      }
-
-      end = Math.min(end, fileSize - 1);
+      const { start, end } = range;
       const chunkSize = end - start + 1;
       const fileStream = createReadStream(filePath, { start, end });
 

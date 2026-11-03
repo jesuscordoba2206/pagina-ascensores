@@ -12,14 +12,14 @@ export default function CatalogoViewerClient({ accessToken }) {
     router.push('/#inicio');
   };
 
-  const viewerSrc = `${CATALOGO_VIEW_ENDPOINT}?token=${encodeURIComponent(accessToken)}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`;
+  const viewerSrc = `${CATALOGO_VIEW_ENDPOINT}?token=${encodeURIComponent(accessToken)}#toolbar=0&navpanes=0&scrollbar=1&view=FitH&zoom=page-width&pagemode=none`;
 
   return (
     <div className="relative -mt-24 min-h-screen bg-zinc-950 text-white md:-mt-28">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.18),_transparent_55%)]" />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col px-4 pb-6 pt-6 sm:px-6 lg:px-8">
-        <header className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-zinc-900/80 p-3 backdrop-blur-md">
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col px-2 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-6 lg:px-8">
+        <header className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-zinc-900/80 p-3 backdrop-blur-md sm:mb-4 sm:rounded-2xl">
           <button
             type="button"
             onClick={closeViewer}
@@ -31,11 +31,11 @@ export default function CatalogoViewerClient({ accessToken }) {
           </button>
         </header>
 
-        <section className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/60 shadow-2xl shadow-black/25">
+        <section className="overflow-x-hidden overflow-y-auto rounded-xl border border-white/10 bg-zinc-900/60 shadow-2xl shadow-black/25 sm:rounded-2xl [scrollbar-gutter:stable]">
           <iframe
             src={viewerSrc}
             title="Catalogo ITV"
-            className="h-[calc(100svh-130px)] w-full rounded-2xl"
+            className="block h-[calc(100svh-108px)] w-full max-w-full rounded-xl border-0 sm:h-[calc(100svh-130px)] sm:rounded-2xl"
           />
         </section>
       </div>
