@@ -45,7 +45,7 @@ export default function Home() {
                 Elevators Ingenieria en Transporte Vertical en Colombia
               </h1>
 
-              <p className="text-base md:text-xl font-normal text-gray-400 mt-6 max-w-xl leading-relaxed mb-8">
+              <p className="text-base md:text-xl font-normal text-gray-300 mt-6 max-w-xl leading-relaxed mb-8">
                 Expertos en soluciones verticales a nivel nacional.
                 Innovacion y confiabilidad para sus equipos.
               </p>
@@ -61,7 +61,7 @@ export default function Home() {
         </section>
 
         <main className="relative min-h-screen bg-[url('/fondo_img.jpg')] bg-cover bg-center bg-no-repeat md:bg-fixed">
-          <div className="absolute inset-0 bg-black/75" />
+          <div className="absolute inset-0 bg-black/60" />
 
           <div className="relative z-10 py-32 px-6">
             <div className="max-w-6xl mx-auto">

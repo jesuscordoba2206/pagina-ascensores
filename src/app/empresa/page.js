@@ -39,7 +39,7 @@ export default async function EmpresaPage() {
     <>
       <JsonLd id="breadcrumbs-empresa-jsonld" data={breadcrumbJsonLd} />
       <div className="relative min-h-screen bg-[url('/fondo_img.jpg')] bg-cover bg-center text-white md:bg-fixed">
-        <div className="absolute inset-0 bg-black/70" />
+        <div className="absolute inset-0 bg-black/60" />
         <Navbar />
 
         <main className="relative pt-28 md:pt-36">
@@ -48,7 +48,7 @@ export default async function EmpresaPage() {
               <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight max-w-4xl">
                 Portafolio de instalaciones de transporte vertical de alto impacto en Colombia.
               </h1>
-              <p className="mt-4 max-w-3xl text-zinc-400 leading-relaxed">
+              <p className="mt-4 max-w-3xl text-zinc-300 leading-relaxed">
                 Descubre proyectos recientes que muestran nuestra experiencia en ascensores, escaleras eléctricas y soluciones integrales para edificios comerciales y residenciales.
               </p>
             </div>
@@ -58,13 +58,13 @@ export default async function EmpresaPage() {
             <div className="mx-auto max-w-7xl grid gap-6 lg:grid-cols-2">
               <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900/40 p-10 backdrop-blur-md shadow-xl shadow-cyan-500/10">
                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">Misión</h2>
-                <p className="text-zinc-400 leading-relaxed">
+                <p className="text-zinc-300 leading-relaxed">
                   Brindar soluciones confiables en transporte vertical, ofreciendo ascensores seguros, cómodos y eficientes, adaptados a cada espacio y necesidad. Nuestro compromiso es garantizar la satisfacción del cliente mediante un servicio responsable y un soporte técnico oportuno.
                 </p>
               </div>
               <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900/40 p-10 backdrop-blur-md shadow-xl shadow-cyan-500/10">
                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">Visión</h2>
-                <p className="text-zinc-400 leading-relaxed">
+                <p className="text-zinc-300 leading-relaxed">
                   Convertirnos en la empresa líder del transporte vertical en el mercado nacional, reconocidos como una organización sólida, rentable y modelo de otras organizaciones mediante nuestra búsqueda constante de la mejora continua,
                 </p>
               </div>

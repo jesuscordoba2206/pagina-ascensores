@@ -114,6 +114,7 @@ export default function ServiciosPageClient() {
 
   return (
     <div className="relative min-h-screen bg-[url('/fondo_img.jpg')] bg-cover bg-center bg-no-repeat text-white md:bg-fixed">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/60" />
       <span id="ascensores" aria-hidden="true" className="absolute -top-24 h-px w-px md:-top-28" />
       <span id="escaleras" aria-hidden="true" className="absolute -top-24 h-px w-px md:-top-28" />
       <div className="relative">
@@ -175,6 +176,7 @@ export default function ServiciosPageClient() {
                       sizes="(max-width: 767px) 100vw, (max-width: 1280px) 60vw, 750px"
                       className="-z-20 object-cover opacity-70 transition-transform duration-700 motion-safe:group-hover:scale-105"
                     />
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-black/60" />
 
                     <div className="mb-7 flex items-start justify-between gap-4">
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-400/10 text-cyan-300">
