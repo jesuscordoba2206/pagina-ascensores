@@ -157,7 +157,7 @@ export default function ServiciosPageClient() {
                 return (
                   <article
                     key={card.title}
-                    className={`group relative isolate flex min-h-[350px] flex-col overflow-hidden rounded-[1.75rem] border border-white/15 bg-zinc-900/70 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-colors duration-300 hover:border-cyan-400/40 sm:p-8 ${
+                    className={`group relative isolate flex min-h-[350px] flex-col overflow-hidden rounded-[1.75rem] border border-white/15 bg-zinc-900/70 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.25)] [text-shadow:0_1px_4px_rgb(0_0_0_/_0.85)] backdrop-blur-xl transition-colors duration-300 hover:border-cyan-400/40 sm:p-8 ${
                       index === 0 || index === 3 ? 'md:col-span-7' : 'md:col-span-5'
                     }`}
                   >
@@ -166,9 +166,9 @@ export default function ServiciosPageClient() {
                       alt=""
                       fill
                       sizes="(max-width: 767px) 100vw, (max-width: 1280px) 60vw, 750px"
-                      className="-z-20 object-cover opacity-30 transition-transform duration-700 motion-safe:group-hover:scale-105"
+                      className="-z-20 object-cover opacity-40 transition-transform duration-700 motion-safe:group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 -z-10 bg-gradient-to-r from-zinc-950/95 via-zinc-950/75 to-zinc-950/45" />
+                    <div className="absolute inset-0 -z-10 bg-gradient-to-r from-zinc-950/55 via-zinc-950/35 to-zinc-950/15" />
 
                     <div className="mb-7 flex items-start justify-between gap-4">
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-400/10 text-cyan-300">
