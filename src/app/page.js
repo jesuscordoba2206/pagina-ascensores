@@ -99,7 +99,7 @@ export default function Home() {
                   <p className="text-sm md:text-base font-normal text-gray-300 leading-relaxed">
                     TELEFONO: 3105751970
                     TELEFONO: 3202051034
-                    correo: elevatorscompanyantioquia@gmail.com
+                    correo: elevatorsitv@gmail.com
                   </p>
                 </div>
               </div>

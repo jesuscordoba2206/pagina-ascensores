@@ -20,7 +20,7 @@ export const seoConfig = {
   company: {
     name: 'Elevators ITV',
     legalName: 'Elevators Ingenieria en Transporte Vertical',
-    email: 'elevatorscompanyantioquia@gmail.com',
+    email: 'elevatorsitv@gmail.com',
     phone: '+57 310 575 1970',
     alternatePhone: '+57 320 205 1034',
     addressRegion: 'Antioquia',

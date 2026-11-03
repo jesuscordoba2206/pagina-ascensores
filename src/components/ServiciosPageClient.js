@@ -5,6 +5,8 @@ import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import { ArrowUpRight, Clock3, Cog, Hammer, Wrench } from 'lucide-react';
 
+const whatsappNumber = '573202051034';
+
 const categories = {
   ascensores: {
     label: 'Ascensores',
@@ -13,28 +15,32 @@ const categories = {
       {
         title: 'Mantenimiento Preventivo',
         subtitle: 'Seguridad en cada recorrido',
-        points: ['Lubricación de componentes', 'Calibración de sistemas', 'Norma NTC 2503'],
+        message: 'Hola, me interesa solicitar más información sobre el servicio de Mantenimiento Preventivo de Ascensores.',
+        points: ['Seguridad bajo norma NTC 2503', 'Lubricación y revisión de frenos', 'Preparación para certificación anual'],
         image: '/mantenimientoAscensor.jpg',
         icon: Cog,
       },
       {
         title: 'Instalación y Modernización',
         subtitle: 'Tecnología que eleva sus espacios',
-        points: ['Cabinas a medida', 'Eficiencia energética', 'Cumplimiento de normas NTC'],
+        message: 'Hola, me interesa solicitar más información sobre el servicio de Instalación y Modernización de Ascensores.',
+        points: ['Sistemas de última tecnología', 'Cabinas a medida con accesibilidad NTC 4349', 'Eficiencia energética'],
         image: '/instalacionAscensor.jpg',
         icon: Wrench,
       },
       {
         title: 'Reparaciones y Adecuación Normativa',
         subtitle: 'Confianza que se mantiene en movimiento',
-        points: ['Subsanación de hallazgos ONAC', 'Sistemas de paracaídas', 'Norma NTC 5926-1'],
+        message: 'Hola, me interesa solicitar más información sobre Reparaciones y Adecuación Normativa de Ascensores.',
+        points: ['Sustitución de componentes con trazabilidad', 'Subsanación de hallazgos ONAC', 'Paracaídas bajo norma NTC 5926-1'],
         image: '/reparacionAscensor.jpg',
         icon: Hammer,
       },
       {
         title: 'Atención de Emergencias 24/7',
         subtitle: 'Siempre cerca cuando nos necesita',
-        points: ['Rescate de usuarios', 'Protocolos de atención', 'Norma EN 81-28'],
+        message: 'Hola, necesito soporte urgente o información sobre la Atención de Emergencias 24/7 de Ascensores.',
+        points: ['Soporte prioritario los 365 días', 'Respuesta ante atrapamientos', 'Comunicación bidireccional EN 81-28'],
         image: '/emergenciaAscensor.jpg',
         icon: Clock3,
       },
@@ -47,20 +53,23 @@ const categories = {
       {
         title: 'Mantenimiento Preventivo',
         subtitle: 'Continuidad para espacios en movimiento',
-        points: ['Inspección de cadenas', 'Sistemas de transmisión', 'Seguridad de peines'],
+        message: 'Hola, me interesa solicitar más información sobre el servicio de Mantenimiento Preventivo de Escaleras Eléctricas.',
+        points: ['Funcionamiento seguro bajo norma NTC 5926-2', 'Control de cadenas y pasamanos', 'Prevención de paradas'],
         image: '/mantenimientoEscalera.jpg',
         icon: Cog,
       },
       {
         title: 'Modernización y Optimización',
         subtitle: 'Eficiencia para un mejor recorrido',
-        points: ['Actualización de sistemas de tracción', 'Iluminación LED de guía', 'Ahorro energético'],
+        message: 'Hola, me interesa solicitar más información sobre el servicio de Modernización y Optimización de Escaleras Eléctricas.',
+        points: ['Actualización de sistemas de control sin obra mayor', 'Motores eficientes', 'Iluminación LED'],
         image: '/instalacionEscalera.jpg',
         icon: Wrench,
       },
       {
         title: 'Reparaciones Especializadas',
         subtitle: 'Precisión en cada intervención',
+        message: 'Hola, me interesa solicitar más información sobre Reparaciones Especializadas de Escaleras Eléctricas.',
         points: ['Corrección de fallas mecánicas', 'Sustitución de peldaños', 'Ajuste de sistemas de parada de emergencia'],
         image: '/reparacionEscalera.jpg',
         icon: Hammer,
@@ -68,7 +77,8 @@ const categories = {
       {
         title: 'Soporte Técnico y Emergencias',
         subtitle: 'Respuesta oportuna para mantener el flujo',
-        points: ['Atención prioritaria ante paradas imprevistas', 'Soporte en centros comerciales', 'Atención en espacios de alto flujo'],
+        message: 'Hola, necesito soporte urgente o información sobre Soporte Técnico y Emergencias de Escaleras Eléctricas.',
+        points: ['Asistencia prioritaria para centros comerciales', 'Soporte en espacios de alto tráfico', 'Protocolos de desbloqueo seguro'],
         image: '/emergenciaEscalera.jpg',
         icon: Clock3,
       },
@@ -106,14 +116,12 @@ export default function ServiciosPageClient() {
     <div className="relative min-h-screen bg-[url('/fondo_img.jpg')] bg-cover bg-center bg-no-repeat text-white md:bg-fixed">
       <span id="ascensores" aria-hidden="true" className="absolute -top-24 h-px w-px md:-top-28" />
       <span id="escaleras" aria-hidden="true" className="absolute -top-24 h-px w-px md:-top-28" />
-      <div className="absolute inset-0 bg-zinc-950/85" />
-
       <div className="relative">
         <Navbar />
 
         <main className="px-5 pb-20 pt-24 sm:px-8 md:pt-28 lg:px-12">
           <div className="mx-auto max-w-7xl">
-            <header className="mb-10 md:mb-14">
+            <header className="mb-10 [text-shadow:0_2px_6px_rgb(0_0_0_/_0.95)] md:mb-14">
               <div className="mb-8 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
                 <span className="h-px w-9 bg-cyan-400" />
                 Ingeniería en transporte vertical
@@ -136,7 +144,7 @@ export default function ServiciosPageClient() {
                       type="button"
                       aria-pressed={activeCategory === key}
                       onClick={() => changeCategory(key)}
-                      className={`flex-1 rounded-xl px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 sm:flex-none sm:px-5 sm:text-xs ${
+                      className={`flex-1 rounded-xl px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] [text-shadow:none] transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 sm:flex-none sm:px-5 sm:text-xs ${
                         activeCategory === key
                           ? 'bg-cyan-400 text-zinc-950 shadow-[0_0_24px_rgba(34,211,238,0.2)]'
                           : 'text-zinc-300 hover:bg-white/5 hover:text-white'
@@ -152,12 +160,11 @@ export default function ServiciosPageClient() {
             <div key={activeCategory} className="servicios-grid grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-5">
               {category.cards.map((card, index) => {
                 const Icon = card.icon;
-                const subject = encodeURIComponent(`Consulta: ${card.title} - ${category.label}`);
 
                 return (
                   <article
                     key={card.title}
-                    className={`group relative isolate flex min-h-[350px] flex-col overflow-hidden rounded-[1.75rem] border border-white/15 bg-zinc-900/70 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.25)] [text-shadow:0_1px_4px_rgb(0_0_0_/_0.85)] backdrop-blur-xl transition-colors duration-300 hover:border-cyan-400/40 sm:p-8 ${
+                    className={`group relative isolate flex min-h-[350px] flex-col overflow-hidden rounded-[1.75rem] border border-white/15 bg-zinc-900/70 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.25)] [text-shadow:0_1px_3px_#000,0_2px_8px_#000] backdrop-blur-xl transition-colors duration-300 hover:border-cyan-400/40 sm:p-8 ${
                       index === 0 || index === 3 ? 'md:col-span-7' : 'md:col-span-5'
                     }`}
                   >
@@ -166,9 +173,8 @@ export default function ServiciosPageClient() {
                       alt=""
                       fill
                       sizes="(max-width: 767px) 100vw, (max-width: 1280px) 60vw, 750px"
-                      className="-z-20 object-cover opacity-40 transition-transform duration-700 motion-safe:group-hover:scale-105"
+                      className="-z-20 object-cover opacity-70 transition-transform duration-700 motion-safe:group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 -z-10 bg-gradient-to-r from-zinc-950/55 via-zinc-950/35 to-zinc-950/15" />
 
                     <div className="mb-7 flex items-start justify-between gap-4">
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-400/10 text-cyan-300">
@@ -178,7 +184,7 @@ export default function ServiciosPageClient() {
                     </div>
 
                     <h2 className="max-w-lg text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">{card.title}</h2>
-                    <p className="mt-2 text-sm italic text-cyan-100/75">{card.subtitle}</p>
+                    <p className="mt-2 text-sm italic text-cyan-100">{card.subtitle}</p>
 
                     <ul className="mt-6 space-y-2.5 text-sm leading-relaxed text-zinc-200">
                       {card.points.map((point) => (
@@ -191,9 +197,9 @@ export default function ServiciosPageClient() {
 
                     <div className="mt-auto flex justify-end pt-7">
                       <a
-                        href={`mailto:elevatorscompanyantioquia@gmail.com?subject=${subject}`}
+                        href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(card.message)}`}
                         aria-label={`Consultar sobre ${card.title} de ${category.label}`}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/5 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:border-cyan-300 hover:bg-cyan-400 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                        className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-zinc-950/80 px-4 py-2.5 text-xs font-semibold text-white [text-shadow:none] transition-colors hover:border-cyan-300 hover:bg-cyan-400 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
                       >
                         Consultar servicio <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                       </a>

@@ -1,7 +1,7 @@
 export const REPORT_COMPANY_CONFIG = {
   nombreEmpresa: 'ELEVATORS COMPANY ANTIOQUIA S.A.S',
   logoUrl: '/logo-v2.png',
-  email: 'Elevatorscompanyantioquia@mail.com',
+  email: 'elevatorsitv@gmail.com',
   telefonos: '310 5751970 - 310 6519565',
   nit: '901439284',
 };
