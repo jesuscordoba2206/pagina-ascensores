@@ -1,4 +1,6 @@
 import { buildPageMetadata } from '@/lib/seo';
+import { headers } from 'next/headers';
+import { createCatalogAccessToken } from '@/lib/catalogAccess';
 import CatalogoViewerClient from './CatalogoViewerClient';
 
 export const metadata = buildPageMetadata({
@@ -10,6 +12,8 @@ export const metadata = buildPageMetadata({
   noIndex: true,
 });
 
-export default function CatalogoPage() {
-  return <CatalogoViewerClient />;
+export default async function CatalogoPage() {
+  await headers();
+  const accessToken = createCatalogAccessToken();
+  return <CatalogoViewerClient accessToken={accessToken} />;
 }

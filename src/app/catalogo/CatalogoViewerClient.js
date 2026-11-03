@@ -2,19 +2,21 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Download, X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 
-const CATALOGO_PATH = '/itv catalogo.pdf';
+const CATALOGO_VIEW_ENDPOINT = '/api/catalogo/view';
 
-export default function CatalogoViewerClient() {
+export default function CatalogoViewerClient({ accessToken }) {
   const router = useRouter();
 
   const closeViewer = () => {
     router.push('/#inicio');
   };
 
+  const viewerSrc = `${CATALOGO_VIEW_ENDPOINT}?token=${encodeURIComponent(accessToken)}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`;
+
   return (
-    <div className="relative min-h-screen bg-zinc-950 text-white">
+    <div className="relative -mt-24 min-h-screen bg-zinc-950 text-white md:-mt-28">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.18),_transparent_55%)]" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col px-4 pb-6 pt-6 sm:px-6 lg:px-8">
@@ -39,20 +41,11 @@ export default function CatalogoViewerClient() {
             </Link>
           </div>
 
-          <Link
-            href={CATALOGO_PATH}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-3 py-2 text-sm font-semibold uppercase tracking-wide text-black transition hover:opacity-85"
-          >
-            <Download className="h-4 w-4" />
-            Descargar
-          </Link>
         </header>
 
         <section className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/60 shadow-2xl shadow-black/25">
           <iframe
-            src={`${CATALOGO_PATH}#toolbar=1&navpanes=1&scrollbar=1&view=FitH`}
+            src={viewerSrc}
             title="Catalogo ITV"
             className="h-[calc(100svh-130px)] w-full rounded-2xl"
           />
