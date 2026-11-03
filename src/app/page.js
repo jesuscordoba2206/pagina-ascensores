@@ -25,7 +25,7 @@ export default function Home() {
       <div className="bg-black text-white">
         <Navbar />
 
-        <section className="h-svh relative overflow-hidden bg-black -mt-24 md:-mt-28">
+        <section id="inicio" className="h-svh relative overflow-hidden bg-black -mt-24 md:-mt-28">
           <video
             autoPlay
             loop
