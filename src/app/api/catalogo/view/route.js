@@ -1,5 +1,7 @@
 import path from 'path';
-import { readFile } from 'fs/promises';
+import { createReadStream } from 'fs';
+import { stat } from 'fs/promises';
+import { Readable } from 'stream';
 import { validateCatalogAccessToken } from '@/lib/catalogAccess';
 
 export const runtime = 'nodejs';
@@ -21,16 +23,70 @@ export async function GET(request) {
 
   try {
     const filePath = path.join(process.cwd(), 'public', 'itv catalogo.pdf');
-    const buffer = await readFile(filePath);
+    const fileStats = await stat(filePath);
+    const fileSize = fileStats.size;
+    const rangeHeader = request.headers.get('range') || '';
 
-    return new Response(buffer, {
+    const baseHeaders = {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'inline; filename="catalogo-itv.pdf"',
+      'Cache-Control': 'private, no-store',
+      'Accept-Ranges': 'bytes',
+      'X-Content-Type-Options': 'nosniff',
+    };
+
+    if (rangeHeader) {
+      const match = /bytes=(\d*)-(\d*)/.exec(rangeHeader);
+      if (!match) {
+        return new Response(null, {
+          status: 416,
+          headers: {
+            ...baseHeaders,
+            'Content-Range': `bytes */${fileSize}`,
+          },
+        });
+      }
+
+      let start = match[1] ? Number(match[1]) : 0;
+      let end = match[2] ? Number(match[2]) : fileSize - 1;
+
+      if (
+        Number.isNaN(start)
+        || Number.isNaN(end)
+        || start < 0
+        || end < start
+        || start >= fileSize
+      ) {
+        return new Response(null, {
+          status: 416,
+          headers: {
+            ...baseHeaders,
+            'Content-Range': `bytes */${fileSize}`,
+          },
+        });
+      }
+
+      end = Math.min(end, fileSize - 1);
+      const chunkSize = end - start + 1;
+      const fileStream = createReadStream(filePath, { start, end });
+
+      return new Response(Readable.toWeb(fileStream), {
+        status: 206,
+        headers: {
+          ...baseHeaders,
+          'Content-Length': String(chunkSize),
+          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        },
+      });
+    }
+
+    const fileStream = createReadStream(filePath);
+
+    return new Response(Readable.toWeb(fileStream), {
       status: 200,
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'inline; filename="catalogo-itv.pdf"',
-        'Content-Length': String(buffer.length),
-        'Cache-Control': 'private, no-store',
-        'X-Content-Type-Options': 'nosniff',
+        ...baseHeaders,
+        'Content-Length': String(fileSize),
       },
     });
   } catch (error) {
