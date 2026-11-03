@@ -12,7 +12,7 @@ export default function CatalogoViewerClient({ accessToken }) {
     router.push('/#inicio');
   };
 
-  const viewerSrc = `${CATALOGO_VIEW_ENDPOINT}?token=${encodeURIComponent(accessToken)}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`;
+  const viewerSrc = `${CATALOGO_VIEW_ENDPOINT}?token=${encodeURIComponent(accessToken)}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`;
 
   return (
     <div className="relative -mt-24 min-h-screen bg-zinc-950 text-white md:-mt-28">
@@ -36,7 +36,6 @@ export default function CatalogoViewerClient({ accessToken }) {
             src={viewerSrc}
             title="Catalogo ITV"
             className="h-[calc(100svh-130px)] w-full rounded-2xl"
-            sandbox="allow-same-origin allow-scripts"
           />
         </section>
       </div>
